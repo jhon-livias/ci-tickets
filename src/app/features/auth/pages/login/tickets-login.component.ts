@@ -48,9 +48,6 @@ export class TicketsLoginComponent {
   }
 
   continueWithGoogle(): void {
-    this.notice.set({
-      text: 'El acceso con Google se habilitará al terminar su retorno seguro a Tickets.',
-      tone: 'info',
-    });
+    window.location.assign('/api/v1/auth/google?application=tickets');
   }
 }
