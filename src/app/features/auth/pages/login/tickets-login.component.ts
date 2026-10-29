@@ -3,9 +3,11 @@ import { Router } from '@angular/router';
 
 import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { RecaptchaService } from '../../../../core/security/recaptcha.service';
+import { AuthLayoutComponent } from '../../../../layouts/auth-layout/auth-layout.component';
 
 @Component({
   selector: 'app-tickets-login',
+  imports: [AuthLayoutComponent],
   templateUrl: './tickets-login.component.html',
 })
 export class TicketsLoginComponent {
