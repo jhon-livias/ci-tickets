@@ -33,10 +33,32 @@ export class TicketsAuthService {
     this.user.set(session.user);
   }
 
+  async restore(): Promise<boolean> {
+    const current = await this.session();
+    if (current) {
+      this.csrfToken = current.csrfToken;
+      this.user.set(current.user);
+      return true;
+    }
+
+    const refreshed = await fetch(`${authBaseUrl}/refresh`, { method: 'POST', credentials: 'include' });
+    if (!refreshed.ok || refreshed.status === 204) return false;
+    const session = toSession(await refreshed.json() as unknown);
+    this.csrfToken = session.csrfToken;
+    this.user.set(session.user);
+    return true;
+  }
+
   async logout(): Promise<void> {
     try {
       await fetch(`${authBaseUrl}/logout`, { method: 'POST', credentials: 'include', headers: this.csrfToken ? { 'X-CSRF-Token': this.csrfToken } : {} });
     } finally { this.csrfToken = null; this.user.set(null); }
+  }
+
+  private async session(): Promise<{ readonly csrfToken: string; readonly user: TicketsUser } | null> {
+    const response = await fetch(`${authBaseUrl}/session`, { credentials: 'include' });
+    if (!response.ok || response.status === 204) return null;
+    return toSession(await response.json() as unknown);
   }
 }
 
