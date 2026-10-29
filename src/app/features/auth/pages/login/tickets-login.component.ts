@@ -1,43 +1,56 @@
 import { Component, inject, signal } from '@angular/core';
+import { FormField, FormRoot, form, minLength, required } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
 import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { RecaptchaService } from '../../../../core/security/recaptcha.service';
 import { AuthLayoutComponent } from '../../../../layouts/auth-layout/auth-layout.component';
+import { UiAlertComponent, type AlertTone } from '../../../../shared/ui/alert/ui-alert.component';
+import { UiButtonComponent } from '../../../../shared/ui/button/ui-button.component';
+import { UiFieldComponent } from '../../../../shared/ui/field/ui-field.component';
+import type { LoginCredentials } from '../../models/login-credentials.model';
 
 @Component({
   selector: 'app-tickets-login',
-  imports: [AuthLayoutComponent],
+  imports: [FormField, FormRoot, AuthLayoutComponent, UiAlertComponent, UiButtonComponent, UiFieldComponent],
   templateUrl: './tickets-login.component.html',
 })
 export class TicketsLoginComponent {
   private readonly auth = inject(TicketsAuthService);
   private readonly recaptcha = inject(RecaptchaService);
   private readonly router = inject(Router);
-  readonly username = signal('');
-  readonly password = signal('');
+  readonly credentials = signal<LoginCredentials>({ username: '', password: '' });
+  readonly loginForm = form(this.credentials, (path) => {
+    required(path.username, { message: 'Ingresa tu usuario institucional.' });
+    required(path.password, { message: 'Ingresa tu contraseña.' });
+    minLength(path.password, 8, { message: 'La contraseña debe tener al menos 8 caracteres.' });
+  });
   readonly submitting = signal(false);
-  readonly notice = signal<string | null>(null);
-
-  value(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
+  readonly notice = signal<{ readonly text: string; readonly tone: AlertTone } | null>(null);
 
   async submit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    if (!this.username().trim() || !this.password()) {
-      this.notice.set('Ingresa usuario y contraseña.');
+    this.loginForm().markAsTouched();
+    if (this.loginForm().invalid()) {
+      this.notice.set({ text: 'Revisa los datos marcados para continuar.', tone: 'warning' });
       return;
     }
     this.submitting.set(true);
     this.notice.set(null);
     try {
-      await this.auth.login(this.username().trim(), this.password(), await this.recaptcha.executeLogin());
+      await this.auth.login(this.credentials().username.trim(), this.credentials().password, await this.recaptcha.executeLogin());
       await this.router.navigateByUrl('/');
     } catch (error) {
-      this.notice.set(error instanceof Error ? error.message : 'No pudimos iniciar sesión.');
+      this.notice.set({ text: error instanceof Error ? error.message : 'No pudimos iniciar sesión.', tone: 'error' });
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  continueWithGoogle(): void {
+    this.notice.set({
+      text: 'El acceso con Google se habilitará al terminar su retorno seguro a Tickets.',
+      tone: 'info',
+    });
   }
 }
