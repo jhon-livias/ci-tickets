@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 export interface TicketsSsoIdentity {
   readonly subject: string;
@@ -11,9 +11,12 @@ export interface TicketsSsoIdentity {
 const clientId = 'ci-tickets';
 const verifierKey = 'tickets.sso.pkce-verifier';
 const stateKey = 'tickets.sso.state';
+const authBaseUrl = 'https://services.uprit.edu.pe/api/v1/auth';
 
 @Injectable({ providedIn: 'root' })
 export class SsoAuthService {
+  readonly identity = signal<TicketsSsoIdentity | null>(null);
+
   beginLogin(): void {
     const verifier = randomUrlValue(64);
     const state = randomUrlValue(32);
@@ -28,7 +31,7 @@ export class SsoAuthService {
         code_challenge_method: 'S256',
         state,
       });
-      window.location.assign(`/api/v1/auth/sso/authorize?${query.toString()}`);
+      window.location.assign(`${authBaseUrl}/sso/authorize?${query.toString()}`);
     });
   }
 
@@ -40,9 +43,9 @@ export class SsoAuthService {
     if (!expectedState || !verifier || !state || !safeEqual(expectedState, state)) {
       throw new Error('No se pudo validar el retorno seguro de inicio de sesión.');
     }
-    const response = await fetch('/api/v1/auth/sso/token', {
+    const response = await fetch(`${authBaseUrl}/sso/token`, {
       method: 'POST',
-      credentials: 'same-origin',
+      credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_id: clientId,
@@ -52,7 +55,9 @@ export class SsoAuthService {
       }),
     });
     if (!response.ok) throw new Error('El código de inicio de sesión venció o no es válido.');
-    return response.json() as Promise<TicketsSsoIdentity>;
+    const identity = await response.json() as TicketsSsoIdentity;
+    this.identity.set(identity);
+    return identity;
   }
 }
 

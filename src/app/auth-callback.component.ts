@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { SsoAuthService, type TicketsSsoIdentity } from './core/auth/sso-auth.service';
+import { SsoAuthService } from './core/auth/sso-auth.service';
 
 @Component({
   selector: 'app-auth-callback',
@@ -35,8 +35,7 @@ export class AuthCallbackComponent {
       return;
     }
     try {
-      const identity = await this.sso.completeLogin(code, this.route.snapshot.queryParamMap.get('state'));
-      storeIdentity(identity);
+      await this.sso.completeLogin(code, this.route.snapshot.queryParamMap.get('state'));
       await this.router.navigateByUrl('/');
     } catch (error) {
       this.title.set('No se pudo iniciar sesión');
@@ -44,6 +43,3 @@ export class AuthCallbackComponent {
     }
   }
 }
-
-const storeIdentity = (identity: TicketsSsoIdentity): void =>
-  sessionStorage.setItem('tickets.sso.identity', JSON.stringify(identity));
