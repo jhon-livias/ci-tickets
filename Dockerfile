@@ -7,5 +7,5 @@ RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build /app/dist/ci-frontend/browser /usr/share/nginx/html
+COPY --from=build /app/dist/ci-tickets/browser /usr/share/nginx/html
 EXPOSE 8080
