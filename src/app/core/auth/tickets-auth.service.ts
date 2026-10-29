@@ -11,7 +11,9 @@ interface LoginResponse {
   readonly user: { readonly id: string; readonly username: string; readonly profile: { readonly firstName: string; readonly paternalLastName: string } | null };
 }
 
-const authBaseUrl = 'https://services.uprit.edu.pe/api/v1/auth';
+// Tickets expone el Gateway bajo su mismo dominio; así la sesión queda aislada
+// por aplicación y el navegador no necesita una petición CORS para autenticar.
+const authBaseUrl = '/api/v1/auth';
 
 @Injectable({ providedIn: 'root' })
 export class TicketsAuthService {
