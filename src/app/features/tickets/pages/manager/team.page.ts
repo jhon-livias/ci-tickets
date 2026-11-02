@@ -65,14 +65,14 @@ export class TeamPage {
     if (member && !member.isManager) this.removing.set(member);
   }
 
-  save(): void {
+  async save(): Promise<void> {
     const current = this.selected();
     if (!current) return;
     if (this.fullName().trim().length < 3 || !/^\d{8}$/.test(this.document()) || this.roleTitle().trim().length < 3) {
       this.notice.set('Completa nombres, DNI de 8 dígitos y cargo.');
       return;
     }
-    this.catalog.saveMember({
+    await this.catalog.saveMember({
       id: current.id || crypto.randomUUID(),
       fullName: this.fullName().trim(),
       document: this.document().trim(),
@@ -87,9 +87,9 @@ export class TeamPage {
     this.notice.set(null);
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     const member = this.removing();
-    if (member) this.catalog.removeMember(member.id);
+    if (member) await this.catalog.removeMember(member.id);
     this.removing.set(null);
   }
 

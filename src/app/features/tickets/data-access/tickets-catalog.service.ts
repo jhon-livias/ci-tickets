@@ -1,6 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { canReopenTicket, nextTicketCode } from '../models/ticket-labels';
+import { TicketsAuthService } from '../../../core/auth/tickets-auth.service';
 import type {
   CreateExternalTicketInput,
   CreateInternalTicketInput,
@@ -13,15 +13,24 @@ import type {
   TicketPriority,
   TicketStatus,
 } from '../models/ticket.model';
-import { seedAreas, seedCategories, seedPriorities, seedTeam, seedTickets } from './tickets-catalog.seed';
+
+const ticketsBaseUrl = '/api/v1/tickets';
+
+interface CatalogSnapshot {
+  readonly areas: readonly ServiceArea[];
+  readonly categories: readonly TicketCategory[];
+  readonly team: readonly TeamMember[];
+  readonly priorities: readonly PriorityLevel[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class TicketsCatalogService {
-  private readonly ticketsState = signal<readonly Ticket[]>(seedTickets);
-  private readonly areasState = signal<readonly ServiceArea[]>(seedAreas);
-  private readonly categoriesState = signal<readonly TicketCategory[]>(seedCategories);
-  private readonly teamState = signal<readonly TeamMember[]>(seedTeam);
-  private readonly prioritiesState = signal<readonly PriorityLevel[]>(seedPriorities);
+  private readonly auth = inject(TicketsAuthService);
+  private readonly ticketsState = signal<readonly Ticket[]>([]);
+  private readonly areasState = signal<readonly ServiceArea[]>([]);
+  private readonly categoriesState = signal<readonly TicketCategory[]>([]);
+  private readonly teamState = signal<readonly TeamMember[]>([]);
+  private readonly prioritiesState = signal<readonly PriorityLevel[]>([]);
   private readonly profilePhone = signal('987123456');
 
   readonly tickets = this.ticketsState.asReadonly();
@@ -40,137 +49,117 @@ export class TicketsCatalogService {
     this.profilePhone.set(phone);
   }
 
-  createExternalTicket(input: CreateExternalTicketInput, requesterName: string, requesterRole: string): Ticket {
-    const area = this.areasState().find((item) => item.id === input.areaId);
-    const category = this.categoriesState().find((item) => item.id === input.categoryId);
-    if (!area || !category) throw new Error('No pudimos registrar el ticket. Revisa el área y la categoría.');
-    const now = new Date();
-    const aboutLabel = input.about === 'self'
-      ? `Yo mismo/a · ${requesterName}`
-      : `${input.about === 'student' ? 'Alumno' : 'Docente'} · ${input.otherName}`;
-    const ticket: Ticket = {
-      id: crypto.randomUUID(),
-      code: nextTicketCode(area.code, this.ticketsState().map((item) => item.code), now),
-      kind: 'EXTERNAL',
-      createdAt: now.toISOString(),
-      academicArea: '',
-      aboutLabel,
-      categoryName: category.name,
-      status: 'CREATED',
-      estimate: this.estimateFor(category.name),
-      priority: this.priorityFor(category.name),
-      requesterName,
-      requesterRole,
-      assignedName: null,
-      dueOn: null,
-      description: input.description,
-      receiverResponse: '',
-      resolvedAt: null,
-      attachmentNames: input.attachmentNames,
-      destinationAreaCode: area.code,
-      emittedInternally: false,
-      history: [{ status: 'CREATED', at: now.toISOString(), actorName: requesterName, actorArea: requesterRole }],
-    };
-    this.ticketsState.update((items) => [ticket, ...items]);
-    return ticket;
+  async refresh(): Promise<void> {
+    const [catalog, tickets] = await Promise.all([
+      this.request<CatalogSnapshot>('GET', '/catalog'),
+      this.request<readonly Ticket[]>('GET', ''),
+    ]);
+    this.areasState.set(catalog.areas);
+    this.categoriesState.set(catalog.categories);
+    this.teamState.set(catalog.team);
+    this.prioritiesState.set(catalog.priorities);
+    this.ticketsState.set(tickets);
   }
 
-  createInternalTicket(input: CreateInternalTicketInput, actorName: string): Ticket {
-    const now = new Date();
-    const ticket: Ticket = {
-      id: crypto.randomUUID(),
-      code: nextTicketCode('TI', this.ticketsState().map((item) => item.code), now),
-      kind: 'INTERNAL',
-      createdAt: now.toISOString(),
-      academicArea: '',
-      aboutLabel: `Responsable de TI · ${actorName}`,
-      categoryName: input.categoryName,
-      status: 'CREATED',
-      estimate: this.estimateFor(input.categoryName),
-      priority: input.priority,
-      requesterName: actorName,
-      requesterRole: 'Responsable de TI',
+  async createExternalTicket(input: CreateExternalTicketInput): Promise<Ticket> {
+    const ticket = await this.request<Ticket>('POST', '', {
+      areaId: input.areaId,
+      about: input.about,
+      otherName: input.otherName,
+      otherDocument: input.otherDocument,
+      categoryId: input.categoryId,
+      description: input.description,
+      attachmentNames: input.attachmentNames,
+    });
+    await this.refresh();
+    return this.ticketById(ticket.id) ?? ticket;
+  }
+
+  async createInternalTicket(input: CreateInternalTicketInput): Promise<Ticket> {
+    const ticket = await this.request<Ticket>('POST', '/internal', {
       assignedName: input.assignedName,
       dueOn: input.dueOn,
+      priority: input.priority,
+      categoryName: input.categoryName,
       description: input.description,
-      receiverResponse: '',
-      resolvedAt: null,
       attachmentNames: input.attachmentNames,
-      destinationAreaCode: 'TI',
-      emittedInternally: true,
-      history: [{ status: 'CREATED', at: now.toISOString(), actorName, actorArea: 'TI' }],
+    });
+    await this.refresh();
+    return this.ticketById(ticket.id) ?? ticket;
+  }
+
+  async reopenTicket(id: string, reason: string): Promise<void> {
+    await this.request<void>('POST', `/${id}/reopen`, { reason });
+    await this.refresh();
+  }
+
+  async changeStatus(id: string, status: TicketStatus, note: string, assignedName?: string): Promise<void> {
+    await this.request<void>('POST', `/${id}/status`, { status, note, assignedName });
+    await this.refresh();
+  }
+
+  async saveArea(area: ServiceArea): Promise<void> {
+    const known = this.areasState().some((item) => item.id === area.id);
+    const body = {
+      parentId: area.parentId,
+      code: area.code,
+      name: area.name,
+      responsibility: area.responsibility,
+      managerName: area.managerName,
+      managerDocument: area.managerDocument,
+      managerEmail: area.managerEmail,
+      receivesTickets: area.receivesTickets,
+      allowsInternal: area.allowsInternal,
+      canCreateTickets: area.canCreateTickets,
+      enabled: area.enabled,
     };
-    this.ticketsState.update((items) => [ticket, ...items]);
-    return ticket;
+    if (known) await this.request<void>('PUT', `/areas/${area.id}`, body);
+    else await this.request<void>('POST', '/areas', body);
+    await this.refresh();
   }
 
-  reopenTicket(id: string, reason: string, actorName: string): void {
-    this.patchTicket(id, (ticket) => {
-      if (!canReopenTicket(ticket.resolvedAt, ticket.status)) {
-        throw new Error('El plazo de reapertura ya venció.');
-      }
-      return {
-        ...ticket,
-        status: 'REOPENED',
-        estimate: 'Pendiente de nueva revisión',
-        description: `${ticket.description}\n\nMotivo de reapertura: ${reason}`,
-        history: [...ticket.history, { status: 'REOPENED', at: new Date().toISOString(), actorName, actorArea: 'Solicitante' }],
-      };
-    });
+  async removeArea(id: string): Promise<void> {
+    await this.request<void>('DELETE', `/areas/${id}`);
+    await this.refresh();
   }
 
-  changeStatus(id: string, status: TicketStatus, actorName: string, note: string, assignedName?: string): void {
-    this.patchTicket(id, (ticket) => ({
-      ...ticket,
-      status,
-      assignedName: assignedName ?? ticket.assignedName,
-      receiverResponse: note || ticket.receiverResponse,
-      resolvedAt: status === 'RESOLVED' ? new Date().toISOString() : ticket.resolvedAt,
-      history: [...ticket.history, { status, at: new Date().toISOString(), actorName, actorArea: 'TI', toName: assignedName }],
-    }));
+  async saveCategory(category: TicketCategory): Promise<void> {
+    const known = this.categoriesState().some((item) => item.id === category.id);
+    const body = { areaId: category.areaId, name: category.name, description: category.description, enabled: category.enabled };
+    if (known) await this.request<void>('PUT', `/categories/${category.id}`, body);
+    else await this.request<void>('POST', '/categories', body);
+    await this.refresh();
   }
 
-  saveArea(area: ServiceArea): void {
-    this.areasState.update((items) => {
-      const index = items.findIndex((item) => item.id === area.id);
-      if (index < 0) return [area, ...items];
-      return items.map((item) => (item.id === area.id ? area : item));
-    });
+  async removeCategory(id: string): Promise<void> {
+    await this.request<void>('DELETE', `/categories/${id}`);
+    await this.refresh();
   }
 
-  removeArea(id: string): void {
-    this.areasState.update((items) => items.filter((item) => item.id !== id && item.parentId !== id));
-    this.categoriesState.update((items) => items.filter((item) => item.areaId !== id));
+  async saveMember(member: TeamMember): Promise<void> {
+    const known = this.teamState().some((item) => item.id === member.id);
+    const body = {
+      fullName: member.fullName,
+      document: member.document,
+      roleTitle: member.roleTitle,
+      email: member.email,
+      phone: member.phone,
+      functions: member.functions,
+      schedule: member.schedule,
+    };
+    if (known) await this.request<void>('PUT', `/team/${member.id}`, body);
+    else await this.request<void>('POST', '/team', body);
+    await this.refresh();
   }
 
-  saveCategory(category: TicketCategory): void {
-    this.categoriesState.update((items) => {
-      const index = items.findIndex((item) => item.id === category.id);
-      if (index < 0) return [category, ...items];
-      return items.map((item) => (item.id === category.id ? category : item));
-    });
+  async removeMember(id: string): Promise<void> {
+    await this.request<void>('DELETE', `/team/${id}`);
+    await this.refresh();
   }
 
-  removeCategory(id: string): void {
-    this.categoriesState.update((items) => items.filter((item) => item.id !== id));
-  }
-
-  saveMember(member: TeamMember): void {
-    this.teamState.update((items) => {
-      const index = items.findIndex((item) => item.id === member.id);
-      if (index < 0) return [...items, member];
-      return items.map((item) => (item.id === member.id ? member : item));
-    });
-  }
-
-  removeMember(id: string): void {
-    this.teamState.update((items) => items.filter((item) => item.id !== id || item.isManager));
-  }
-
-  addPriorityActivity(level: TicketPriority, activity: PriorityActivity): void {
-    this.prioritiesState.update((items) => items.map((item) =>
-      item.level === level ? { ...item, activities: [...item.activities, activity] } : item,
-    ));
+  async addPriorityActivity(level: TicketPriority, activity: PriorityActivity): Promise<void> {
+    await this.request<void>('POST', '/priorities/activities', { level, ...activity });
+    await this.refresh();
   }
 
   oldestPendingDate(): string {
@@ -184,25 +173,31 @@ export class TicketsCatalogService {
       .sort()[0] ?? new Date().toISOString().slice(0, 10);
   }
 
-  private estimateFor(categoryName: string): string {
-    for (const level of this.prioritiesState()) {
-      const match = level.activities.find((activity) => activity.categoryName === categoryName);
-      if (match) return match.estimate;
-    }
-    return 'Según disponibilidad';
-  }
-
-  private priorityFor(categoryName: string): TicketPriority {
-    for (const level of this.prioritiesState()) {
-      if (level.activities.some((activity) => activity.categoryName === categoryName)) return level.level;
-    }
-    return 'MEDIUM';
-  }
-
-  private patchTicket(id: string, update: (ticket: Ticket) => Ticket): void {
-    const current = this.ticketById(id);
-    if (!current) throw new Error('No encontramos el ticket.');
-    const next = update(current);
-    this.ticketsState.update((items) => items.map((item) => (item.id === id ? next : item)));
+  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+    const response = await fetch(`${ticketsBaseUrl}${path}`, {
+      method,
+      credentials: 'include',
+      headers: {
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...this.auth.csrfHeaders(),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (!response.ok) throw new Error(await apiError(response));
+    if (response.status === 204) return undefined as T;
+    const text = await response.text();
+    return (text ? JSON.parse(text) as T : undefined as T);
   }
 }
+
+const apiError = async (response: Response): Promise<string> => {
+  try {
+    const payload: unknown = await response.json();
+    if (payload && typeof payload === 'object' && typeof (payload as { message?: unknown }).message === 'string') {
+      return (payload as { message: string }).message;
+    }
+  } catch {
+    /* cuerpo no JSON */
+  }
+  return 'No pudimos completar la operación. Inténtalo nuevamente.';
+};

@@ -99,13 +99,13 @@ export class CategoriesPage {
     return this.catalog.categories().find((item) => item.id === String(row['id'] ?? '')) ?? null;
   }
 
-  save(): void {
+  async save(): Promise<void> {
     if (!this.categoryArea() || this.name().trim().length < 3) {
       this.notice.set('Elige un área y un nombre de categoría.');
       return;
     }
     const current = this.selected();
-    this.catalog.saveCategory({
+    await this.catalog.saveCategory({
       id: current?.id || crypto.randomUUID(),
       areaId: this.categoryArea(),
       name: this.name().trim(),
@@ -115,9 +115,9 @@ export class CategoriesPage {
     this.selected.set(null);
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     const category = this.removing();
-    if (category) this.catalog.removeCategory(category.id);
+    if (category) await this.catalog.removeCategory(category.id);
     this.removing.set(null);
     this.selected.set(null);
   }

@@ -105,13 +105,13 @@ export class AreasPage {
     if (area) this.fill(area);
   }
 
-  save(): void {
+  async save(): Promise<void> {
     if (!/^[A-Z]{2,6}$/.test(this.code().trim()) || this.name().trim().length < 3) {
       this.notice.set('Usa siglas de 2 a 6 letras y un nombre de área.');
       return;
     }
     const current = this.selected();
-    this.catalog.saveArea({
+    await this.catalog.saveArea({
       id: current?.id || crypto.randomUUID(),
       parentId: this.parentId() || null,
       code: this.code().trim().toUpperCase(),
@@ -128,9 +128,9 @@ export class AreasPage {
     this.selected.set(null);
   }
 
-  remove(): void {
+  async remove(): Promise<void> {
     const area = this.removing();
-    if (area) this.catalog.removeArea(area.id);
+    if (area) await this.catalog.removeArea(area.id);
     this.removing.set(null);
     this.selected.set(null);
   }

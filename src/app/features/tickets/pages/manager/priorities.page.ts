@@ -56,10 +56,10 @@ export class PrioritiesPage {
     this.editing.set(false);
   }
 
-  addActivity(): void {
+  async addActivity(): Promise<void> {
     const level = this.selected();
     if (!level || !this.category() || this.activity().trim().length < 3 || !this.estimate().trim()) return;
-    this.catalog.addPriorityActivity(level, {
+    await this.catalog.addPriorityActivity(level, {
       categoryName: this.category(),
       activity: this.activity().trim(),
       estimate: this.estimate().trim(),

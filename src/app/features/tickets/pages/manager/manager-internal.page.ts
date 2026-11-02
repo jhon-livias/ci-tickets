@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 
-import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { TicketDetailComponent } from '../../components/ticket-detail/ticket-detail.component';
 import { rowId, toTicketRow } from '../../data-access/ticket-table.adapter';
 import { emptyQuery, filterTickets, priorityOptions, statusOptions } from '../../data-access/ticket-query';
@@ -33,7 +32,6 @@ import { UiTableComponent, type UiTableColumn, type UiTableRow } from '../../../
 })
 export class ManagerInternalPage {
   private readonly catalog = inject(TicketsCatalogService);
-  private readonly auth = inject(TicketsAuthService);
   readonly crumbs = [{ label: 'Atención UPRIT' }, { label: 'Tickets internos' }];
   readonly week = weekBounds();
   readonly emitFrom = signal(this.week.from);
@@ -118,34 +116,36 @@ export class ManagerInternalPage {
     if (value === 'HIGH' || value === 'MEDIUM' || value === 'LOW' || value === '') this.priority.set(value);
   }
 
-  create(): void {
+  async create(): Promise<void> {
     this.notice.set(null);
     if (!this.assigned() || !this.dueOn() || !this.priority() || !this.category() || this.description().trim().length < 10) {
       this.notice.set('Completa asignado, fecha límite, prioridad, categoría y una descripción detallada.');
       return;
     }
-    const actor = this.auth.user()?.displayName || this.auth.user()?.username || 'Responsable';
-    this.catalog.createInternalTicket({
-      assignedName: this.assigned(),
-      dueOn: this.dueOn(),
-      priority: this.priority() as TicketPriority,
-      categoryName: this.category(),
-      description: this.description().trim(),
-      attachmentNames: [],
-    }, actor);
-    this.creating.set(false);
-    this.assigned.set('');
-    this.dueOn.set('');
-    this.priority.set('');
-    this.category.set('');
-    this.description.set('');
+    try {
+      await this.catalog.createInternalTicket({
+        assignedName: this.assigned(),
+        dueOn: this.dueOn(),
+        priority: this.priority() as TicketPriority,
+        categoryName: this.category(),
+        description: this.description().trim(),
+        attachmentNames: [],
+      });
+      this.creating.set(false);
+      this.assigned.set('');
+      this.dueOn.set('');
+      this.priority.set('');
+      this.category.set('');
+      this.description.set('');
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos registrar el ticket interno.');
+    }
   }
 
-  changeStatus(event: { readonly status: TicketStatus; readonly note: string; readonly assignedName: string }): void {
+  async changeStatus(event: { readonly status: TicketStatus; readonly note: string; readonly assignedName: string }): Promise<void> {
     const ticket = this.selected();
-    const name = this.auth.user()?.displayName || this.auth.user()?.username || 'Responsable';
     if (!ticket) return;
-    this.catalog.changeStatus(ticket.id, event.status, name, event.note, event.assignedName || undefined);
+    await this.catalog.changeStatus(ticket.id, event.status, event.note, event.assignedName || undefined);
     this.selected.set(this.catalog.ticketById(ticket.id));
   }
 }

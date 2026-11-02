@@ -2,7 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormRoot, form, minLength, required } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
-import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { TicketsCatalogService } from '../../data-access/tickets-catalog.service';
 import { UiAlertComponent } from '../../../../shared/ui/alert/ui-alert.component';
 import { UiButtonComponent } from '../../../../shared/ui/button/ui-button.component';
@@ -27,7 +26,6 @@ interface CreateTicketDraft {
 })
 export class CreateTicketPage {
   private readonly catalog = inject(TicketsCatalogService);
-  private readonly auth = inject(TicketsAuthService);
   private readonly router = inject(Router);
   readonly draft = signal<CreateTicketDraft>({
     areaId: this.catalog.receivingAreas()[0]?.id ?? '',
@@ -87,7 +85,7 @@ export class CreateTicketPage {
     this.notice.set(null);
   }
 
-  submit(event: SubmitEvent): void {
+  async submit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     this.ticketForm().markAsTouched();
     const data = this.draft();
@@ -99,17 +97,20 @@ export class CreateTicketPage {
       this.notice.set('Revisa los datos marcados para continuar.');
       return;
     }
-    const user = this.auth.user();
-    const ticket = this.catalog.createExternalTicket({
-      areaId: data.areaId,
-      about: data.about as 'self' | 'student' | 'teacher',
-      otherName: data.otherName.trim(),
-      otherDocument: data.otherDocument.trim(),
-      categoryId: data.categoryId,
-      description: data.description.trim(),
-      attachmentNames: this.files(),
-    }, user?.displayName || user?.username || 'Solicitante', 'Solicitante');
-    this.createdCode.set(ticket.code);
+    try {
+      const ticket = await this.catalog.createExternalTicket({
+        areaId: data.areaId,
+        about: data.about as 'self' | 'student' | 'teacher',
+        otherName: data.otherName.trim(),
+        otherDocument: data.otherDocument.trim(),
+        categoryId: data.categoryId,
+        description: data.description.trim(),
+        attachmentNames: this.files(),
+      });
+      this.createdCode.set(ticket.code);
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos registrar el ticket.');
+    }
   }
 
   finish(): void {

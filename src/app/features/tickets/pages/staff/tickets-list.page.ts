@@ -2,7 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
-import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { TicketDetailComponent, type TicketDetailMode } from '../../components/ticket-detail/ticket-detail.component';
 import { rowId, toTicketRow } from '../../data-access/ticket-table.adapter';
 import { emptyQuery, filterTickets, priorityOptions, statusOptions } from '../../data-access/ticket-query';
@@ -50,7 +49,6 @@ const isListConfig = (value: unknown): value is TicketsListConfig =>
 export class TicketsListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly catalog = inject(TicketsCatalogService);
-  private readonly auth = inject(TicketsAuthService);
   private readonly routeData = toSignal(this.route.data, { initialValue: this.route.snapshot.data });
   readonly config = computed(() => {
     const data = this.routeData()['list'];
@@ -152,11 +150,10 @@ export class TicketsListPage {
     this.selected.set(this.catalog.ticketById(rowId(row)));
   }
 
-  changeStatus(event: { readonly status: TicketStatus; readonly note: string; readonly assignedName: string }): void {
+  async changeStatus(event: { readonly status: TicketStatus; readonly note: string; readonly assignedName: string }): Promise<void> {
     const ticket = this.selected();
-    const name = this.auth.user()?.displayName || this.auth.user()?.username || 'Operador';
     if (!ticket) return;
-    this.catalog.changeStatus(ticket.id, event.status, name, event.note, event.assignedName || undefined);
+    await this.catalog.changeStatus(ticket.id, event.status, event.note, event.assignedName || undefined);
     this.selected.set(this.catalog.ticketById(ticket.id));
   }
 

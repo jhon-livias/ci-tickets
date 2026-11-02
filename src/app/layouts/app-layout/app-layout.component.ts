@@ -51,6 +51,10 @@ export class AppLayoutComponent {
     { value: 'EDUCACION INICIAL', label: 'Educación Inicial' },
   ]);
 
+  constructor() {
+    void this.catalog.refresh();
+  }
+
   toggleMenu(): void { this.menuOpen.update((value) => !value); }
   toggleTickets(): void { this.ticketsOpen.update((value) => !value); }
   toggleProfile(event: MouseEvent): void {

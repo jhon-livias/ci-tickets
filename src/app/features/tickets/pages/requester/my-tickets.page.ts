@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { TicketDetailComponent } from '../../components/ticket-detail/ticket-detail.component';
 import { rowId, toTicketRow } from '../../data-access/ticket-table.adapter';
 import { emptyQuery, filterTickets, statusOptions } from '../../data-access/ticket-query';
@@ -31,7 +30,6 @@ import { UiTableComponent, type UiTableColumn, type UiTableRow } from '../../../
 })
 export class MyTicketsPage {
   private readonly catalog = inject(TicketsCatalogService);
-  private readonly auth = inject(TicketsAuthService);
   private readonly viewState = inject(TicketsViewState);
   private readonly router = inject(Router);
 
@@ -70,11 +68,10 @@ export class MyTicketsPage {
     this.selected.set(this.catalog.ticketById(rowId(row)));
   }
 
-  reopen(reason: string): void {
+  async reopen(reason: string): Promise<void> {
     const ticket = this.selected();
-    const name = this.auth.user()?.displayName || this.auth.user()?.username || 'Solicitante';
     if (!ticket) return;
-    this.catalog.reopenTicket(ticket.id, reason, name);
+    await this.catalog.reopenTicket(ticket.id, reason);
     this.selected.set(this.catalog.ticketById(ticket.id));
   }
 }
