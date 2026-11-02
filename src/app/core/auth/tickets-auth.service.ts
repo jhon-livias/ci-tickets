@@ -23,7 +23,7 @@ export class TicketsAuthService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password, recaptchaToken }),
     });
-    if (!response.ok) throw new Error('No pudimos iniciar sesión. Verifica tus credenciales e inténtalo nuevamente.');
+    if (!response.ok) throw new Error(await loginErrorMessage(response));
     const session = toSession(await response.json() as unknown);
     this.csrfToken = session.csrfToken;
     this.user.set(session.user);
@@ -57,6 +57,18 @@ export class TicketsAuthService {
     return toSession(await response.json() as unknown);
   }
 }
+
+const loginErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const payload: unknown = await response.json();
+    if (payload && typeof payload === 'object' && typeof (payload as { message?: unknown }).message === 'string') {
+      return (payload as { message: string }).message;
+    }
+  } catch {
+    /* El cuerpo no es JSON; se usa el mensaje genérico. */
+  }
+  return 'No pudimos iniciar sesión. Verifica tus credenciales e inténtalo nuevamente.';
+};
 
 const toSession = (value: unknown): { readonly csrfToken: string; readonly user: TicketsUser } => {
   if (!value || typeof value !== 'object') throw new Error('Respuesta de autenticación inválida.');
