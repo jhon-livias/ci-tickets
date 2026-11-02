@@ -1,0 +1,33 @@
+<ui-page-header [items]="crumbs" title="Categorías" description="Son las opciones de “¿Qué tipo de problema tienes?” que elige el solicitante al crear un ticket.">
+  <ui-button (click)="openCreate()">Crear categoría</ui-button>
+</ui-page-header>
+<ui-filter-bar>
+  <ui-select id="c-area" label="Área" [options]="areaChoices()" [(value)]="areaId" />
+  <ui-select id="c-status" label="Estado" [options]="statusChoices" [(value)]="status" />
+  <ui-field id="c-search" label="Categoría" [(value)]="search" />
+  <ui-button variant="secondary" (click)="clearFilters()">Limpiar filtros</ui-button>
+</ui-filter-bar>
+<div class="mt-6">
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" (view)="open($event)" (edit)="open($event)" (remove)="removing.set(categoryFrom($event))" />
+</div>
+@if (selected(); as category) {
+  <ui-dialog [title]="category.id ? 'Detalle de categoría' : 'Crear categoría'" (closed)="selected.set(null)">
+    @if (notice()) { <ui-alert tone="warning">{{ notice() }}</ui-alert> }
+    <div class="mt-4 grid gap-4">
+      <ui-select id="cat-area" label="Área" [options]="areaChoices().filter((item) => item.value)" [(value)]="categoryArea" />
+      <ui-field id="cat-name" label="Nombre" [(value)]="name" />
+      <ui-field id="cat-description" label="Descripción" type="textarea" [(value)]="description" />
+      <ui-checkbox id="cat-enabled" label="Categoría activa" [(checked)]="enabled" />
+    </div>
+    <div dialog-footer class="flex gap-3">
+      <ui-button variant="secondary" (click)="selected.set(null)">Cerrar</ui-button>
+      @if (category.id) {
+        <ui-button variant="secondary" (click)="removing.set(category)">Eliminar</ui-button>
+      }
+      <ui-button (click)="save()">Guardar</ui-button>
+    </div>
+  </ui-dialog>
+}
+@if (removing(); as category) {
+  <ui-confirm title="Eliminar categoría" [message]="'¿Eliminar la categoría ' + category.name + '?'" (cancelled)="removing.set(null)" (confirmed)="remove()" />
+}

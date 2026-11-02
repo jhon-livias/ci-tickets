@@ -1,0 +1,15 @@
+<ui-page-header [items]="crumbs" title="Mis tickets" description="Consulta tus solicitudes, del más reciente al más antiguo.">
+  <ui-button (click)="goCreate()">Crear ticket</ui-button>
+</ui-page-header>
+<ui-filter-bar>
+  <ui-field id="tickets-from" label="Fecha inicial" type="date" [(value)]="from" />
+  <ui-field id="tickets-to" label="Fecha final" type="date" [(value)]="to" />
+  <ui-select id="tickets-status" label="Estado" [options]="statusChoices" [(value)]="status" />
+  <ui-button variant="secondary" (click)="clearFilters()">Limpiar filtros</ui-button>
+</ui-filter-bar>
+<div class="mt-6">
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" emptyMessage="No se encontraron tickets con los filtros seleccionados." (view)="open($event)" />
+</div>
+@if (selected(); as ticket) {
+  <app-ticket-detail [ticket]="ticket" [mode]="ticket.status === 'RESOLVED' ? 'reopen' : 'readonly'" (closed)="selected.set(null)" (reopen)="reopen($event)" />
+}

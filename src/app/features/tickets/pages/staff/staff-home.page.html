@@ -1,0 +1,11 @@
+<ui-page-header [items]="crumbs" title="Inicio" [description]="description()" />
+@if (role() !== 'admin') {
+  <ui-filter-bar>
+    <ui-field id="dash-from" label="Fecha inicial" type="date" [(value)]="from" />
+    <ui-field id="dash-to" label="Fecha final" type="date" [(value)]="to" />
+    <ui-button variant="secondary" (click)="clearDates()">Limpiar fechas</ui-button>
+  </ui-filter-bar>
+}
+<div class="mt-6">
+  <app-ticket-stats [items]="stats()" />
+</div>

@@ -47,6 +47,21 @@ describe('UiTableComponent', () => {
     expect(pageChange).toHaveBeenCalledWith({ page: 0, pageSize: 2 });
   });
 
+  it('emits view for a row when that action is enabled', () => {
+    const view = vi.fn();
+    component.view.subscribe(view);
+    fixture.componentRef.setInput('actions', true);
+    fixture.componentRef.setInput('allowView', true);
+    fixture.componentRef.setInput('allowEdit', false);
+    fixture.componentRef.setInput('allowRemove', false);
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector('[aria-label="Ver Docente"]') as HTMLButtonElement;
+    button.click();
+
+    expect(view).toHaveBeenCalledWith({ name: 'Docente', users: 197 });
+  });
+
   it('keeps a server page intact and reports its range', () => {
     fixture.componentRef.setInput('totalItems', 12);
     fixture.componentRef.setInput('pageIndex', 1);

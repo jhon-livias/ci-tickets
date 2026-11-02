@@ -1,0 +1,24 @@
+<ui-page-header [items]="crumbs" title="Prioridades" description="Define actividades y tiempos estimados para cada nivel de prioridad: alta, media y baja." />
+<div class="mt-6">
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" (view)="open($event)" />
+</div>
+@if (selectedLevel(); as level) {
+  <ui-dialog [title]="'Prioridad ' + { HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja' }[level.level]" [subtitle]="level.description" (closed)="selected.set(null)">
+    <ui-table [columns]="activityColumns" [rows]="activityRows()" />
+    @if (editing()) {
+      <div class="mt-4 grid gap-4">
+        <ui-select id="prio-cat" label="Categoría" [options]="categoryChoices()" [(value)]="category" />
+        <ui-field id="prio-activity" label="Actividad" [(value)]="activity" />
+        <ui-field id="prio-estimate" label="Tiempo estimado" [(value)]="estimate" />
+      </div>
+    }
+    <div dialog-footer class="flex gap-3">
+      <ui-button variant="secondary" (click)="selected.set(null)">Cerrar</ui-button>
+      @if (!editing()) {
+        <ui-button (click)="editing.set(true)">Editar</ui-button>
+      } @else {
+        <ui-button (click)="addActivity()">Añadir actividad</ui-button>
+      }
+    </div>
+  </ui-dialog>
+}

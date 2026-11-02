@@ -24,6 +24,11 @@
   background: var(--color-surface);
 }
 
+.field__control--textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
 .field__control-wrap {
   position: relative;
 }

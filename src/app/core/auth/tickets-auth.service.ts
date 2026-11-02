@@ -4,11 +4,7 @@ export interface TicketsUser {
   readonly id: string;
   readonly username: string;
   readonly displayName: string | null;
-}
-
-interface LoginResponse {
-  readonly csrfToken: string;
-  readonly user: { readonly id: string; readonly username: string; readonly profile: { readonly firstName: string; readonly paternalLastName: string } | null };
+  readonly roles: readonly string[];
 }
 
 // Tickets expone el Gateway bajo su mismo dominio; así la sesión queda aislada
@@ -77,5 +73,14 @@ const toSession = (value: unknown): { readonly csrfToken: string; readonly user:
     ? `${(profile as Record<string, string>)['firstName']} ${(profile as Record<string, string>)['paternalLastName']}` : null;
   const csrfToken = (value as Record<string, unknown>)['csrfToken'];
   if (typeof csrfToken !== 'string') throw new Error('Respuesta de autenticación inválida.');
-  return { csrfToken, user: { id: candidate['id'], username: candidate['username'], displayName } };
+  const roles = uniqueStrings([
+    ...stringList(candidate['roles']),
+    ...stringList(candidate['applicationRoles']),
+  ]);
+  return { csrfToken, user: { id: candidate['id'], username: candidate['username'], displayName, roles } };
 };
+
+const stringList = (value: unknown): readonly string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const uniqueStrings = (values: readonly string[]): readonly string[] => [...new Set(values)];

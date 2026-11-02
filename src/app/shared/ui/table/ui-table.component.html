@@ -51,11 +51,18 @@
             @if (actions()) {
               <td>
                 <div class="table-card__actions">
+                  @if (allowView()) {
+                    <ui-icon-button icon="view" [label]="'Ver ' + rowLabel(row)" (click)="view.emit(row)" />
+                  }
                   @if (allowReset()) {
                     <ui-icon-button icon="key" [label]="'Restablecer clave de ' + rowLabel(row)" (click)="reset.emit(row)" />
                   }
-                  <ui-icon-button icon="edit" [label]="'Editar ' + rowLabel(row)" (click)="edit.emit(row)" />
-                  <ui-icon-button icon="trash" tone="danger" [label]="'Eliminar ' + rowLabel(row)" (click)="remove.emit(row)" />
+                  @if (allowEdit()) {
+                    <ui-icon-button icon="edit" [label]="'Editar ' + rowLabel(row)" (click)="edit.emit(row)" />
+                  }
+                  @if (allowRemove()) {
+                    <ui-icon-button icon="trash" tone="danger" [label]="'Eliminar ' + rowLabel(row)" (click)="remove.emit(row)" />
+                  }
                 </div>
               </td>
             }

@@ -6,22 +6,39 @@
     }
   </label>
   <div class="field__control-wrap">
-    <input
-      class="field__control"
-      [class.field__control--invalid]="!!message()"
-      [class.field__control--with-toggle]="showPasswordToggle() && type() === 'password'"
-      [attr.aria-describedby]="hint() || message() ? id() + '-description' : null"
-      [attr.aria-invalid]="message() ? 'true' : null"
-      [autocomplete]="autocomplete()"
-      [disabled]="disabled()"
-      [id]="id()"
-      [placeholder]="placeholder()"
-      [required]="required()"
-      [type]="inputType()"
-      [value]="value()"
-      (input)="onValueChange($event)"
-      (blur)="onBlur()"
-    />
+    @if (type() === 'textarea') {
+      <textarea
+        class="field__control field__control--textarea"
+        [class.field__control--invalid]="!!message()"
+        [attr.aria-describedby]="hint() || message() ? id() + '-description' : null"
+        [attr.aria-invalid]="message() ? 'true' : null"
+        [disabled]="disabled()"
+        [id]="id()"
+        [placeholder]="placeholder()"
+        [required]="required()"
+        [value]="value()"
+        rows="5"
+        (input)="onValueChange($event)"
+        (blur)="onBlur()"
+      ></textarea>
+    } @else {
+      <input
+        class="field__control"
+        [class.field__control--invalid]="!!message()"
+        [class.field__control--with-toggle]="showPasswordToggle() && type() === 'password'"
+        [attr.aria-describedby]="hint() || message() ? id() + '-description' : null"
+        [attr.aria-invalid]="message() ? 'true' : null"
+        [autocomplete]="autocomplete()"
+        [disabled]="disabled()"
+        [id]="id()"
+        [placeholder]="placeholder()"
+        [required]="required()"
+        [type]="inputType()"
+        [value]="value()"
+        (input)="onValueChange($event)"
+        (blur)="onBlur()"
+      />
+    }
     @if (showPasswordToggle() && type() === 'password') {
       <button
         class="field__toggle"

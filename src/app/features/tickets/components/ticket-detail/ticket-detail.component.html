@@ -1,0 +1,74 @@
+<ui-dialog [title]="'Ticket ' + ticket().code" subtitle="Información completa de la solicitud" (closed)="closed.emit()">
+  <dl class="grid gap-4 sm:grid-cols-2">
+    <div><dt class="text-xs text-[#7c8691]">N.º del ticket</dt><dd class="font-semibold">{{ ticket().code }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Categoría</dt><dd class="font-semibold">{{ ticket().categoryName }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Solicitante / afectado</dt><dd class="font-semibold">{{ ticket().aboutLabel }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Estado actual</dt><dd class="font-semibold">{{ labels().status }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Prioridad</dt><dd class="font-semibold">{{ labels().priority }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Tipo</dt><dd class="font-semibold">{{ labels().kind }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Asignado a</dt><dd class="font-semibold">{{ ticket().assignedName || 'Sin asignar' }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Tiempo estimado</dt><dd class="font-semibold">{{ ticket().estimate }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Fecha de creación</dt><dd class="font-semibold">{{ labels().createdAt }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Fecha límite</dt><dd class="font-semibold">{{ labels().dueOn }}</dd></div>
+  </dl>
+  <p class="mt-4 text-xs text-[#7c8691]">Descripción</p>
+  <p class="whitespace-pre-wrap text-sm font-semibold text-[#1e1e1e]">{{ ticket().description }}</p>
+  <p class="mt-4 text-xs text-[#7c8691]">Respuesta del receptor</p>
+  <p class="text-sm font-semibold text-[#1e1e1e]">{{ ticket().receiverResponse || 'El área aún no ha registrado una respuesta.' }}</p>
+  @if (ticket().attachmentNames.length) {
+    <p class="mt-4 text-xs text-[#7c8691]">Adjuntos</p>
+    <ul class="list-disc pl-5 text-sm">
+      @for (name of ticket().attachmentNames; track name) {
+        <li>{{ name }}</li>
+      }
+    </ul>
+  }
+  <p class="mt-4 text-xs text-[#7c8691]">Seguimiento del ticket</p>
+  <ol class="mt-2 space-y-3 border-l border-[#eed6db] pl-4">
+    @for (entry of ticket().history; track entry.at + entry.status) {
+      <li>
+        <p class="text-sm font-semibold">{{ labels().status && entry.status }} {{
+          { CREATED: 'Creado', IN_REVIEW: 'En revisión', RETURNED: 'Devuelto', RESOLVED: 'Resuelto', DERIVED: 'Derivado', REOPENED: 'Reaperturado' }[entry.status]
+        }}</p>
+        <p class="text-xs text-[#7c8691]">
+          @if (entry.fromName && entry.toName) {
+            de {{ entry.fromName }} a {{ entry.toName }}
+          } @else {
+            por {{ entry.actorName }}
+          }
+          · {{ entry.actorArea }}
+        </p>
+        <p class="text-xs text-[#7c8691]">{{ when(entry.at) }}</p>
+      </li>
+    }
+  </ol>
+  @if (mode() === 'reopen' && labels().canReopen) {
+    <div class="mt-4">
+      <ui-field id="reopen-reason" label="Motivo de reapertura" type="textarea" [(value)]="reason" hint="Mínimo 5 caracteres." />
+    </div>
+  }
+  @if (mode() === 'status') {
+    <div class="mt-4 grid gap-4">
+      <ui-select id="next-status" label="Nuevo estado" [options]="statusOptions()" [(value)]="nextStatus" />
+      @if (assigneeOptions().length) {
+        <ui-select id="next-assignee" label="Asignar a" [options]="assigneeOptions()" [(value)]="assignee" />
+      }
+      <ui-field id="status-note" label="Comentario" type="textarea" [(value)]="note" />
+    </div>
+  }
+  <div dialog-footer class="flex flex-wrap gap-3">
+    <ui-button variant="secondary" (click)="closed.emit()">Cerrar</ui-button>
+    @if (mode() === 'reopen' && labels().canReopen) {
+      <ui-button (click)="confirmReopen()">Reaperturar ticket</ui-button>
+    }
+    @if (mode() === 'reopen' && !labels().canReopen) {
+      <ui-button [disabled]="true">Plazo de reapertura vencido</ui-button>
+    }
+    @if (mode() === 'status') {
+      <ui-button (click)="confirmStatus()">Guardar estado</ui-button>
+    }
+    @if (mode() === 'edit') {
+      <ui-button (click)="editRequested.emit()">Editar</ui-button>
+    }
+  </div>
+</ui-dialog>

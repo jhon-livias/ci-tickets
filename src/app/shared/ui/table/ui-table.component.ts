@@ -42,6 +42,10 @@ export class UiTableComponent {
   readonly emptyMessage = input('No hay resultados para mostrar.');
   readonly actions = input(false);
   readonly allowReset = input(false);
+  readonly allowView = input(false);
+  readonly allowEdit = input(true);
+  readonly allowRemove = input(true);
+  readonly view = output<UiTableRow>();
   readonly edit = output<UiTableRow>();
   readonly remove = output<UiTableRow>();
   readonly reset = output<UiTableRow>();
@@ -103,7 +107,7 @@ export class UiTableComponent {
   }
 
   protected rowLabel(row: UiTableRow): string {
-    const label = row['name'] ?? row['firstName'] ?? row['id'] ?? '';
+    const label = row['name'] ?? row['firstName'] ?? row['code'] ?? row['id'] ?? '';
     return String(label);
   }
 

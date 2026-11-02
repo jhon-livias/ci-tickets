@@ -1,0 +1,42 @@
+<ui-page-header [items]="crumbs" title="Áreas" description="Registra las áreas de la universidad indicando su área superior y su responsable.">
+  <ui-button (click)="openCreate()">Crear área</ui-button>
+</ui-page-header>
+<ui-filter-bar>
+  <ui-field id="area-search" label="Buscar área" [(value)]="query" />
+</ui-filter-bar>
+<div class="mt-6">
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" [allowReset]="true" (view)="open($event)" (edit)="open($event)" (remove)="removing.set(catalogArea($event))" (reset)="resetting.set(catalogArea($event))" />
+</div>
+@if (selected(); as area) {
+  <ui-dialog [title]="area.id ? 'Detalle del área' : 'Crear área'" (closed)="selected.set(null)">
+    @if (notice()) { <ui-alert tone="warning">{{ notice() }}</ui-alert> }
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <ui-field id="area-code" label="Siglas" [(value)]="code" />
+      <ui-select id="area-parent" label="Área superior" [options]="parentOptions()" [(value)]="parentId" />
+      <ui-field id="area-name" label="Nombre del área" [(value)]="name" />
+      <ui-field id="area-resp" label="Responsabilidad" type="textarea" [(value)]="responsibility" />
+      <ui-field id="area-manager" label="Nombres y apellidos del responsable" [(value)]="managerName" />
+      <ui-field id="area-dni" label="DNI" [(value)]="managerDocument" />
+      <ui-field id="area-email" label="Correo" type="email" [(value)]="managerEmail" />
+      <ui-checkbox id="area-enabled" label="Área activa" [(checked)]="enabled" />
+      <ui-checkbox id="area-internal" label="Ticket interno" [(checked)]="allowsInternal" />
+      <ui-checkbox id="area-receives" label="Recibe tickets" [(checked)]="receivesTickets" />
+      <ui-checkbox id="area-creates" label="Crea ticket" [(checked)]="canCreateTickets" />
+    </div>
+    <div dialog-footer class="flex flex-wrap gap-3">
+      <ui-button variant="secondary" (click)="selected.set(null)">Cerrar</ui-button>
+      @if (area.id) {
+        <ui-button variant="secondary" (click)="goCategories()">Ver categorías</ui-button>
+        <ui-button variant="secondary" (click)="resetting.set(area)">Restablecer contraseña</ui-button>
+        <ui-button variant="secondary" (click)="removing.set(area)">Eliminar</ui-button>
+      }
+      <ui-button (click)="save()">Guardar</ui-button>
+    </div>
+  </ui-dialog>
+}
+@if (removing(); as area) {
+  <ui-confirm title="Eliminar área" [message]="'¿Eliminar el área ' + area.name + '?'" (cancelled)="removing.set(null)" (confirmed)="remove()" />
+}
+@if (resetting(); as area) {
+  <ui-confirm title="Restablecer contraseña" [message]="'Se solicitará el restablecimiento al correo institucional de ' + area.managerName + '.'" (cancelled)="resetting.set(null)" (confirmed)="resetting.set(null)" />
+}

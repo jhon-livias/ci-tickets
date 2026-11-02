@@ -1,0 +1,57 @@
+<ui-page-header [items]="crumbs" title="Organigrama" description="Visualización jerárquica de todas las áreas y sus responsables." />
+<div class="mt-6 overflow-x-auto rounded-2xl bg-white p-6 shadow-[0_8px_24px_rgb(30_30_30_/_8%)]">
+  @if (!trees().length) {
+    <p class="text-sm text-[#7c8691]">No hay áreas configuradas.</p>
+  }
+  <div class="flex min-w-max flex-col gap-10">
+    @for (root of trees(); track root.area.id) {
+      <ul class="flex justify-center gap-8">
+        <li class="flex flex-col items-center">
+          <button class="min-w-48 rounded-xl border border-[#eed6db] bg-[#fcf9fa] px-4 py-3 text-left shadow-sm" type="button" (click)="selected.set(root.area)">
+            <span class="block font-semibold text-[#a9002d]">{{ root.area.name }}</span>
+            <span class="block text-xs text-[#7c8691]">{{ root.area.code }}</span>
+            <span class="mt-2 block text-xs font-semibold">{{ roleFor(root.area) }}</span>
+            <span class="block text-sm">{{ root.area.managerName }}</span>
+          </button>
+          @if (root.children.length) {
+            <ul class="mt-6 flex flex-wrap justify-center gap-6 border-t border-[#eed6db] pt-6">
+              @for (child of root.children; track child.area.id) {
+                <li class="flex flex-col items-center">
+                  <button class="min-w-48 rounded-xl border border-[#eed6db] bg-[#fcf9fa] px-4 py-3 text-left shadow-sm" type="button" (click)="selected.set(child.area)">
+                    <span class="block font-semibold text-[#a9002d]">{{ child.area.name }}</span>
+                    <span class="block text-xs text-[#7c8691]">{{ child.area.code }}</span>
+                    <span class="mt-2 block text-xs font-semibold">{{ roleFor(child.area) }}</span>
+                    <span class="block text-sm">{{ child.area.managerName }}</span>
+                  </button>
+                  @if (child.children.length) {
+                    <ul class="mt-6 flex flex-wrap justify-center gap-6 border-t border-[#eed6db] pt-6">
+                      @for (grand of child.children; track grand.area.id) {
+                        <li>
+                          <button class="min-w-48 rounded-xl border border-[#eed6db] bg-[#fcf9fa] px-4 py-3 text-left shadow-sm" type="button" (click)="selected.set(grand.area)">
+                            <span class="block font-semibold text-[#a9002d]">{{ grand.area.name }}</span>
+                            <span class="block text-xs text-[#7c8691]">{{ grand.area.code }}</span>
+                            <span class="mt-2 block text-xs font-semibold">{{ roleFor(grand.area) }}</span>
+                            <span class="block text-sm">{{ grand.area.managerName }}</span>
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      </ul>
+    }
+  </div>
+</div>
+@if (selected(); as area) {
+  <ui-dialog [title]="area.name" [subtitle]="area.code" (closed)="selected.set(null)">
+    <p class="text-sm">{{ area.responsibility }}</p>
+    <p class="mt-3 text-sm"><strong>Responsable:</strong> {{ area.managerName }}</p>
+    <div dialog-footer>
+      <ui-button (click)="selected.set(null)">Cerrar</ui-button>
+    </div>
+  </ui-dialog>
+}

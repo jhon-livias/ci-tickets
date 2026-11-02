@@ -1,0 +1,25 @@
+<ui-page-header [items]="crumbs" title="Crear ticket" description="Describe el problema para que el área correspondiente pueda atenderlo." />
+@if (notice()) {
+  <div class="mt-4"><ui-alert tone="warning">{{ notice() }}</ui-alert></div>
+}
+<form class="mt-6 max-w-3xl space-y-4" [formRoot]="ticketForm" (submit)="submit($event)">
+  <ui-select id="area-destino" label="¿A qué área va dirigido?" [options]="areaOptions()" [required]="true" [value]="draft().areaId" (valueChange)="patch({ areaId: $event, categoryId: '' })" />
+  <ui-select id="sobre-quien" label="¿Quién tiene el problema?" [options]="aboutOptions" [required]="true" [value]="draft().about" (valueChange)="patch({ about: $event })" />
+  @if (thirdParty()) {
+    <ui-field id="persona-nombre" label="Nombres y apellidos" [required]="true" [value]="draft().otherName" (valueChange)="patch({ otherName: $event })" />
+    <ui-field id="persona-dni" label="DNI" [required]="true" placeholder="8 dígitos" [value]="draft().otherDocument" (valueChange)="patch({ otherDocument: $event })" />
+  }
+  <ui-select id="categoria" label="¿Qué tipo de problema tienes?" [options]="categoryOptions()" [required]="true" [value]="draft().categoryId" (valueChange)="patch({ categoryId: $event })" />
+  <ui-field id="descripcion" label="Descripción del problema" type="textarea" [required]="true" hint="No incluyas contraseñas ni información confidencial." [value]="draft().description" (valueChange)="patch({ description: $event })" />
+  <div>
+    <label class="mb-2 block text-sm font-semibold" for="adjuntos">Adjuntar captura o documentos (opcional)</label>
+    <input id="adjuntos" class="block w-full text-sm" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple (change)="onFiles($event)" />
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <ui-button type="submit">Registrar ticket</ui-button>
+    <ui-button variant="secondary" type="button" (click)="resetForm()">Limpiar formulario</ui-button>
+  </div>
+</form>
+@if (createdCode(); as code) {
+  <ui-confirm title="Ticket registrado" message="Tu solicitud fue emitida correctamente." [details]="[{ label: 'N.º de ticket', value: code }]" confirmLabel="Ir a mis tickets" cancelLabel="Seguir aquí" (confirmed)="finish()" (cancelled)="createdCode.set(null)" />
+}

@@ -3,6 +3,7 @@ import { FormField, FormRoot, form, minLength, required } from '@angular/forms/s
 import { Router } from '@angular/router';
 
 import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
+import { homePathFor, resolveTicketsRole } from '../../../../core/auth/tickets-role';
 import { RecaptchaService } from '../../../../core/security/recaptcha.service';
 import { AuthLayoutComponent } from '../../../../layouts/auth-layout/auth-layout.component';
 import { UiAlertComponent, type AlertTone } from '../../../../shared/ui/alert/ui-alert.component';
@@ -39,7 +40,7 @@ export class TicketsLoginComponent {
     this.notice.set(null);
     try {
       await this.auth.login(this.credentials().username.trim(), this.credentials().password, await this.recaptcha.executeLogin());
-      await this.router.navigateByUrl('/');
+      await this.router.navigateByUrl(homePathFor(resolveTicketsRole(this.auth.user())));
     } catch (error) {
       this.notice.set({ text: error instanceof Error ? error.message : 'No pudimos iniciar sesión.', tone: 'error' });
     } finally {

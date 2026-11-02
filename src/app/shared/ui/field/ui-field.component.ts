@@ -9,7 +9,7 @@ import type { FormValueControl, ValidationError } from '@angular/forms/signals';
 export class UiFieldComponent implements FormValueControl<string> {
   readonly id = input.required<string>();
   readonly label = input.required<string>();
-  readonly type = input<'email' | 'number' | 'password' | 'search' | 'tel' | 'text'>('text');
+  readonly type = input<'date' | 'email' | 'number' | 'password' | 'search' | 'tel' | 'text' | 'textarea'>('text');
   readonly autocomplete = input<string>();
   readonly hint = input<string>();
   readonly error = input<string>();
@@ -29,7 +29,9 @@ export class UiFieldComponent implements FormValueControl<string> {
   );
 
   protected onValueChange(event: Event): void {
-    this.value.set((event.target as HTMLInputElement).value);
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) return;
+    this.value.set(target.value);
   }
 
   protected onBlur(): void {

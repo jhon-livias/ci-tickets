@@ -1,0 +1,52 @@
+<ui-page-header [items]="crumbs" title="Tickets internos" description="Crea y asigna solicitudes de trabajo a los integrantes del área de TI.">
+  <ui-button (click)="creating.set(true)">Crear ticket interno</ui-button>
+</ui-page-header>
+<div class="mt-4"><ui-alert>Los tickets internos sirven para asignar tareas operativas a un colaborador del equipo con prioridad y fecha límite.</ui-alert></div>
+
+<h2 class="mt-8 font-[var(--font-heading)] text-xl font-semibold text-[#a9002d]">Tickets internos emitidos</h2>
+<p class="mt-1 text-sm text-[#7c8691]">Solicitudes creadas por la jefatura</p>
+<ui-filter-bar>
+  <ui-select id="e-colab" label="Colaborador" [options]="collaboratorChoices()" [(value)]="emitColab" />
+  <ui-field id="e-from" label="Fecha inicial" type="date" [(value)]="emitFrom" />
+  <ui-field id="e-to" label="Fecha final" type="date" [(value)]="emitTo" />
+  <ui-select id="e-status" label="Estado" [options]="statusChoices" [(value)]="emitStatus" />
+  <ui-select id="e-priority" label="Prioridad" [options]="priorityChoices" [(value)]="emitPriority" />
+</ui-filter-bar>
+<div class="mt-4">
+  <ui-table [columns]="emittedColumns" [rows]="emittedRows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" (view)="openEmitted($event)" />
+</div>
+
+<h2 class="mt-10 font-[var(--font-heading)] text-xl font-semibold text-[#a9002d]">Tickets internos recibidos</h2>
+<p class="mt-1 text-sm text-[#7c8691]">Solicitudes internas emitidas por superiores autorizados.</p>
+<ui-filter-bar>
+  <ui-field id="i-code" label="Código / N.º ticket" [(value)]="recCode" />
+  <ui-field id="i-from" label="Fecha inicial" type="date" [(value)]="recFrom" />
+  <ui-field id="i-to" label="Fecha final" type="date" [(value)]="recTo" />
+  <ui-select id="i-status" label="Estado" [options]="receivedStatusChoices" [(value)]="recStatus" />
+  <ui-select id="i-priority" label="Prioridad" [options]="priorityChoices" [(value)]="recPriority" />
+</ui-filter-bar>
+<div class="mt-4">
+  <ui-table [columns]="receivedColumns" [rows]="receivedRows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" (view)="openReceived($event)" />
+</div>
+
+@if (creating()) {
+  <ui-dialog title="Crear ticket interno" subtitle="Asigna una tarea a un colaborador del área." (closed)="creating.set(false)">
+    @if (notice()) {
+      <ui-alert tone="warning">{{ notice() }}</ui-alert>
+    }
+    <div class="mt-4 grid gap-4">
+      <ui-select id="new-assigned" label="Asignar a" [options]="assigneeChoices()" [(value)]="assigned" />
+      <ui-field id="new-due" label="Fecha máxima" type="date" [(value)]="dueOn" />
+      <ui-select id="new-priority" label="Prioridad" [options]="priorityChoices.slice(1)" [value]="priority()" (valueChange)="setPriority($event)" />
+      <ui-select id="new-category" label="Categoría" [options]="categoryChoices()" [(value)]="category" />
+      <ui-field id="new-description" label="Descripción" type="textarea" [(value)]="description" />
+    </div>
+    <div dialog-footer class="flex gap-3">
+      <ui-button variant="secondary" (click)="creating.set(false)">Cancelar</ui-button>
+      <ui-button (click)="create()">Registrar</ui-button>
+    </div>
+  </ui-dialog>
+}
+@if (selected(); as ticket) {
+  <app-ticket-detail [ticket]="ticket" [mode]="selectedMode()" [assigneeOptions]="assigneeChoices()" (closed)="selected.set(null)" (statusChanged)="changeStatus($event)" />
+}
