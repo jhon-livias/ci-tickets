@@ -4,9 +4,9 @@ import { UiButtonComponent } from '../../../../shared/ui/button/ui-button.compon
 import { UiDialogComponent } from '../../../../shared/ui/dialog/ui-dialog.component';
 import { UiFieldComponent } from '../../../../shared/ui/field/ui-field.component';
 import { UiSelectComponent, type UiSelectOption } from '../../../../shared/ui/select/ui-select.component';
-import { KIND_LABELS, PRIORITY_LABELS, STATUS_LABELS, canReopenTicket, formatDate, formatDateTime } from '../../models/ticket-labels';
+import { KIND_LABELS, PRIORITY_LABELS, STATUS_LABELS, canReopenTicket, formatDate, formatDateTime, historyCaption } from '../../models/ticket-labels';
 import { nextStatuses, statusNeedsAssignee, statusNeedsComment } from '../../models/status-transition';
-import type { Ticket, TicketStatus } from '../../models/ticket.model';
+import type { Ticket, TicketHistoryEntry, TicketStatus } from '../../models/ticket.model';
 
 export type TicketDetailMode = 'readonly' | 'reopen' | 'status' | 'edit';
 
@@ -18,6 +18,7 @@ export type TicketDetailMode = 'readonly' | 'reopen' | 'status' | 'edit';
 export class TicketDetailComponent {
   readonly ticket = input.required<Ticket>();
   readonly mode = input<TicketDetailMode>('readonly');
+  readonly staffFields = input(true);
   readonly assigneeOptions = input<readonly UiSelectOption[]>([]);
   readonly closed = output<void>();
   readonly reopen = output<string>();
@@ -51,6 +52,8 @@ export class TicketDetailComponent {
       dueOn: formatDate(ticket.dueOn),
       canReopen: canReopenTicket(ticket.resolvedAt, ticket.status),
       canChange: nextStatuses(ticket.status).length > 0,
+      affectedDocument: (ticket.about ?? 'SELF') === 'SELF' ? (ticket.requesterDocument ?? '') : (ticket.affectedDocument ?? ''),
+      affectedName: (ticket.about ?? 'SELF') === 'SELF' ? '' : ticket.aboutLabel,
     };
   });
 
@@ -60,6 +63,10 @@ export class TicketDetailComponent {
 
   protected statusLabel(status: TicketStatus): string {
     return STATUS_LABELS[status];
+  }
+
+  protected caption(entry: TicketHistoryEntry): string {
+    return historyCaption(entry);
   }
 
   protected startChange(): void {

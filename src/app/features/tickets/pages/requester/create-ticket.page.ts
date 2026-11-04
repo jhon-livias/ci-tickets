@@ -69,13 +69,6 @@ export class CreateTicketPage {
       const current = this.draft();
       if (!current.areaId) this.draft.update((draft) => ({ ...draft, areaId: preferred.id }));
     });
-    effect(() => {
-      const areaId = this.draft().areaId;
-      const categories = this.catalog.categories().filter((category) => category.enabled && category.areaId === areaId);
-      const preferred = categories[0];
-      if (!areaId || !preferred || this.draft().categoryId) return;
-      this.draft.update((draft) => ({ ...draft, categoryId: preferred.id }));
-    });
   }
 
   patch(partial: Partial<CreateTicketDraft>): void {

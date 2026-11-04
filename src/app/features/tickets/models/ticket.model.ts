@@ -1,6 +1,7 @@
 export type TicketStatus = 'CREATED' | 'IN_REVIEW' | 'RETURNED' | 'RESOLVED' | 'DERIVED' | 'REOPENED';
 export type TicketKind = 'EXTERNAL' | 'INTERNAL';
 export type TicketPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type TicketAbout = 'SELF' | 'STUDENT' | 'TEACHER';
 export type TicketsRole = 'requester' | 'assistant' | 'area_manager' | 'admin';
 
 export interface TicketHistoryEntry {
@@ -18,7 +19,10 @@ export interface Ticket {
   readonly kind: TicketKind;
   readonly createdAt: string;
   readonly academicArea: string;
+  readonly about?: TicketAbout;
   readonly aboutLabel: string;
+  readonly requesterDocument?: string;
+  readonly affectedDocument?: string;
   readonly categoryName: string;
   readonly status: TicketStatus;
   readonly estimate: string;

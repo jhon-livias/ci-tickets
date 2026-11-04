@@ -46,7 +46,7 @@ export class AppLayoutComponent {
     area_manager: 'Jefatura de TI',
     admin: 'Administrador del sistema',
   }[this.role()]));
-  readonly navItems = computed(() => navFor(this.role(), this.catalog.canCreateTickets(), this.catalog.allowsInternal()));
+  readonly navItems = computed(() => navFor(this.role(), this.catalog.canCreateTickets(), this.catalog.allowsInternal(), this.catalog.receivesTickets()));
   readonly showAreaFilter = computed(() => this.role() === 'requester');
   readonly areaOptions = computed((): readonly UiSelectOption[] => [
     { value: '', label: 'Todas las áreas' },
@@ -103,7 +103,12 @@ export class AppLayoutComponent {
 
 export { homePathFor };
 
-const navFor = (role: TicketsRole, canCreateTickets: boolean, allowsInternal: boolean): readonly NavItem[] => {
+const navFor = (
+  role: TicketsRole,
+  canCreateTickets: boolean,
+  allowsInternal: boolean,
+  receivesTickets: boolean,
+): readonly NavItem[] => {
   if (role === 'requester') {
     return [
       { label: 'Mis tickets', path: '/mis-tickets' },
@@ -113,23 +118,22 @@ const navFor = (role: TicketsRole, canCreateTickets: boolean, allowsInternal: bo
   if (role === 'assistant') {
     return [
       { label: 'Inicio', path: '/inicio' },
-      { label: 'Cola de tickets', path: '/cola' },
+      ...(receivesTickets ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
       ...(allowsInternal ? [{ label: 'Tickets internos', path: '/internos' }] : []),
-      { label: 'Tickets cerrados', path: '/cerrados' },
+      ...(receivesTickets ? [{ label: 'Tickets cerrados', path: '/cerrados' }] : []),
     ];
   }
   if (role === 'area_manager') {
+    const ticketChildren = [
+      ...(receivesTickets ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
+      ...(receivesTickets ? [{ label: 'Tickets cerrados', path: '/historial' }] : []),
+      ...(allowsInternal ? [{ label: 'Tickets internos', path: '/tickets-internos' }] : []),
+    ];
     return [
       { label: 'Inicio', path: '/inicio' },
-      {
-        label: 'Tickets',
-        path: '/cola',
-        children: [
-          { label: 'Cola de tickets', path: '/cola' },
-          { label: 'Tickets cerrados', path: '/historial' },
-          ...(allowsInternal ? [{ label: 'Tickets internos', path: '/tickets-internos' }] : []),
-        ],
-      },
+      ...(ticketChildren.length
+        ? [{ label: 'Tickets', path: ticketChildren[0].path, children: ticketChildren }]
+        : []),
       { label: 'Equipo de TI', path: '/equipo' },
       { label: 'Prioridades', path: '/prioridades' },
     ];

@@ -2,11 +2,17 @@
   <dl class="grid gap-4 sm:grid-cols-2">
     <div><dt class="text-xs text-[#7c8691]">N.º del ticket</dt><dd class="font-semibold">{{ ticket().code }}</dd></div>
     <div><dt class="text-xs text-[#7c8691]">Categoría</dt><dd class="font-semibold">{{ ticket().categoryName }}</dd></div>
-    <div><dt class="text-xs text-[#7c8691]">Solicitante / afectado</dt><dd class="font-semibold">{{ ticket().aboutLabel }}</dd></div>
-    <div><dt class="text-xs text-[#7c8691]">Estado actual</dt><dd class="font-semibold">{{ labels().status }}</dd></div>
-    <div><dt class="text-xs text-[#7c8691]">Prioridad</dt><dd class="font-semibold">{{ labels().priority }}</dd></div>
-    <div><dt class="text-xs text-[#7c8691]">Tipo</dt><dd class="font-semibold">{{ labels().kind }}</dd></div>
-    <div><dt class="text-xs text-[#7c8691]">Asignado a</dt><dd class="font-semibold">{{ ticket().assignedName || 'Sin asignar' }}</dd></div>
+    <div><dt class="text-xs text-[#7c8691]">Solicitante</dt><dd class="font-semibold">{{ ticket().requesterName }}</dd></div>
+    @if (labels().affectedName) {
+      <div><dt class="text-xs text-[#7c8691]">Afectado</dt><dd class="font-semibold">{{ labels().affectedName }}</dd></div>
+    }
+    <div><dt class="text-xs text-[#7c8691]">DNI del afectado</dt><dd class="font-semibold">{{ labels().affectedDocument || '—' }}</dd></div>
+    @if (staffFields()) {
+      <div><dt class="text-xs text-[#7c8691]">Estado actual</dt><dd class="font-semibold">{{ labels().status }}</dd></div>
+      <div><dt class="text-xs text-[#7c8691]">Prioridad</dt><dd class="font-semibold">{{ labels().priority }}</dd></div>
+      <div><dt class="text-xs text-[#7c8691]">Tipo</dt><dd class="font-semibold">{{ labels().kind }}</dd></div>
+      <div><dt class="text-xs text-[#7c8691]">Asignado a</dt><dd class="font-semibold">{{ ticket().assignedName || 'Sin asignar' }}</dd></div>
+    }
     <div><dt class="text-xs text-[#7c8691]">Tiempo estimado</dt><dd class="font-semibold">{{ ticket().estimate }}</dd></div>
     <div><dt class="text-xs text-[#7c8691]">Fecha de creación</dt><dd class="font-semibold">{{ labels().createdAt }}</dd></div>
     @if (ticket().kind === 'INTERNAL') {
@@ -26,18 +32,11 @@
     </ul>
   }
   <p class="mt-4 text-xs text-[#7c8691]">Seguimiento del ticket</p>
-  <ol class="mt-2 space-y-3 border-l border-[#eed6db] pl-4">
+  <ol class="mt-3 flex gap-4 overflow-x-auto pb-2">
     @for (entry of ticket().history; track entry.at + entry.status) {
-      <li>
+      <li class="min-w-44 shrink-0 border-t-2 border-[#a9002d] pt-3">
         <p class="text-sm font-semibold">{{ statusLabel(entry.status) }}</p>
-        <p class="text-xs text-[#7c8691]">
-          @if (entry.fromName && entry.toName) {
-            de {{ entry.fromName }} a {{ entry.toName }}
-          } @else {
-            por {{ entry.actorName }}
-          }
-          · {{ entry.actorArea }}
-        </p>
+        <p class="text-xs text-[#7c8691]">{{ caption(entry) }}</p>
         <p class="text-xs text-[#7c8691]">{{ when(entry.at) }}</p>
       </li>
     }
@@ -76,7 +75,7 @@
       <ui-button [disabled]="true">Plazo de reapertura vencido</ui-button>
     }
     @if (mode() === 'status' && labels().canChange && !changing()) {
-      <ui-button (click)="startChange()">Guardar estado</ui-button>
+      <ui-button (click)="startChange()">Cambiar estado</ui-button>
     }
     @if (mode() === 'status' && changing()) {
       <ui-button variant="secondary" (click)="changing.set(false)">Cancelar</ui-button>

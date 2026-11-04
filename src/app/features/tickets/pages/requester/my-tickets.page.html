@@ -11,5 +11,5 @@
   <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" emptyMessage="No se encontraron tickets con los filtros seleccionados." (view)="open($event)" />
 </div>
 @if (selected(); as ticket) {
-  <app-ticket-detail [ticket]="ticket" [mode]="ticket.status === 'RESOLVED' ? 'reopen' : 'readonly'" (closed)="selected.set(null)" (reopen)="reopen($event)" />
+  <app-ticket-detail [ticket]="ticket" [staffFields]="false" [mode]="ticket.status === 'RESOLVED' ? 'reopen' : 'readonly'" (closed)="selected.set(null)" (reopen)="reopen($event)" />
 }

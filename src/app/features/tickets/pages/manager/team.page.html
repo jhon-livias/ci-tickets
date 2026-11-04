@@ -6,7 +6,7 @@
   <ui-field id="team-dni" label="DNI" [(value)]="documentQuery" />
 </ui-filter-bar>
 <div class="mt-6">
-  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" (view)="open($event, false)" (edit)="open($event, true)" (remove)="confirmRemove($event)" />
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" (view)="open($event, false)" />
 </div>
 @if (selected(); as member) {
   <ui-dialog [title]="dialogTitle(member)" (closed)="selected.set(null)">
@@ -17,8 +17,8 @@
       <ui-field id="member-role" label="Cargo" [disabled]="!creating() || member.isManager" [(value)]="roleTitle" />
       <ui-field id="member-email" label="Correo" [disabled]="!creating() || member.isManager" [(value)]="email" />
       <ui-field id="member-phone" label="Teléfono" [disabled]="!creating() || member.isManager" [(value)]="phone" />
-      <ui-field id="member-functions" label="Funciones" type="textarea" [disabled]="!creating() && !editing()" [(value)]="functions" />
-      <ui-field id="member-schedule" label="Horario de trabajo" type="textarea" [disabled]="!creating() && !editing()" [(value)]="schedule" />
+      <ui-field id="member-functions" label="Funciones" type="textarea" [disabled]="!creating() && !editing()" [(value)]="functions" hint="Separa cada función con un guion medio (-)." />
+      <ui-field id="member-schedule" label="Horario de trabajo" type="textarea" [disabled]="!creating() && !editing()" [(value)]="schedule" hint="Separa cada horario con un guion medio (-)." />
     </div>
     <div dialog-footer class="flex flex-wrap gap-3">
       <ui-button variant="secondary" (click)="selected.set(null)">Cancelar</ui-button>

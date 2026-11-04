@@ -1,4 +1,4 @@
-import type { TicketKind, TicketPriority, TicketStatus } from './ticket.model';
+import type { TicketHistoryEntry, TicketKind, TicketPriority, TicketStatus } from './ticket.model';
 
 export const STATUS_LABELS: Record<TicketStatus, string> = {
   CREATED: 'Creado',
@@ -47,6 +47,16 @@ export const formatDateTime = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return `${date.toLocaleDateString('es-PE')} ${date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+export const historyCaption = (entry: TicketHistoryEntry): string => {
+  if (entry.status === 'IN_REVIEW') return `por ${entry.actorName}`;
+  if (entry.status === 'DERIVED' && entry.fromName && entry.toName) return `de ${entry.fromName} a ${entry.toName}`;
+  if (entry.status === 'DERIVED') return `por ${entry.actorName}`;
+  if (entry.status === 'RESOLVED') return `por ${entry.actorName}`;
+  if (entry.status === 'RETURNED') return `por ${entry.actorName}`;
+  if (entry.status === 'REOPENED') return `por ${entry.actorName}`;
+  return `${entry.actorName} · ${entry.actorArea}`;
 };
 
 export const formatDate = (value: string | null): string => {

@@ -8,6 +8,7 @@ export const toTicketRow = (ticket: Ticket): UiTableRow => ({
   createdAt: formatDateTime(ticket.createdAt),
   about: ticket.aboutLabel,
   requester: ticket.requesterName,
+  affectedDni: (ticket.about ?? 'SELF') === 'SELF' ? '' : ticket.affectedDocument,
   role: ticket.requesterRole,
   category: ticket.categoryName,
   status: STATUS_LABELS[ticket.status],

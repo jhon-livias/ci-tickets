@@ -9,7 +9,7 @@
     <ui-field id="persona-nombre" label="Nombres y apellidos" [required]="true" [value]="draft().otherName" (valueChange)="patch({ otherName: $event })" />
     <ui-field id="persona-dni" label="DNI" [required]="true" placeholder="8 dígitos" [value]="draft().otherDocument" (valueChange)="patch({ otherDocument: $event })" />
   }
-  <ui-select id="categoria" label="¿Qué tipo de problema tienes?" [options]="categoryOptions()" [required]="true" [value]="draft().categoryId" (valueChange)="patch({ categoryId: $event })" />
+  <ui-select id="categoria" label="¿Qué tipo de problema tienes?" [options]="categoryOptions()" [required]="true" placeholder="Selecciona opción" [value]="draft().categoryId" (valueChange)="patch({ categoryId: $event })" />
   <ui-field id="descripcion" label="Descripción del problema" type="textarea" [required]="true" hint="No incluyas contraseñas ni información confidencial." [value]="draft().description" (valueChange)="patch({ description: $event })" />
   <div>
     <label class="mb-2 block text-sm font-semibold" for="adjuntos">Adjuntar captura o documentos (opcional)</label>

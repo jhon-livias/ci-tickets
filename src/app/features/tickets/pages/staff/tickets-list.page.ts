@@ -97,18 +97,21 @@ export class TicketsListPage {
     const due = this.config().showDue;
     const base: UiTableColumn[] = [
       { key: 'code', label: 'N.º de ticket', sortable: true },
+    ];
+    if (this.config().kind === 'ALL' && this.config().showKindFilter) {
+      base.push({ key: 'kind', label: 'Tipo de ticket' });
+    }
+    base.push(
       { key: 'requester', label: 'Solicitante' },
+      { key: 'affectedDni', label: 'DNI del afectado' },
       { key: 'role', label: 'Cargo' },
       { key: 'createdAt', label: 'Fecha y hora', sortable: true },
       { key: 'category', label: 'Categoría' },
       { key: 'status', label: 'Estado' },
       { key: 'estimate', label: 'Tiempo estimado' },
       { key: 'priority', label: 'Prioridad' },
-    ];
+    );
     if (due) base.push({ key: 'dueOn', label: 'Fecha límite' });
-    if (this.config().kind === 'ALL' && this.config().showKindFilter) {
-      base.splice(4, 0, { key: 'kind', label: 'Tipo' });
-    }
     return base;
   });
   readonly rows = computed(() => {
