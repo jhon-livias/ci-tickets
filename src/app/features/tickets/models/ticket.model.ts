@@ -72,6 +72,7 @@ export interface TeamMember {
 }
 
 export interface PriorityActivity {
+  readonly id?: string;
   readonly categoryName: string;
   readonly activity: string;
   readonly estimate: string;

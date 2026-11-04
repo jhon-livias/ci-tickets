@@ -33,7 +33,10 @@ export class AppLayoutComponent {
   readonly notificationsOpen = signal(false);
   readonly ticketsOpen = signal(true);
   readonly profileDialog = signal(false);
+  readonly profileEditing = signal(false);
   readonly phone = signal(this.catalog.contactPhone());
+  readonly documentNumber = computed(() => this.catalog.contactDocument());
+  readonly profileEmail = computed(() => this.catalog.contactEmail());
   readonly academicArea = this.viewState.academicArea;
   readonly displayName = computed(() => this.auth.user()?.displayName || this.auth.user()?.username || 'Usuario');
   readonly role = computed(() => resolveTicketsRole(this.auth.user()));
@@ -43,7 +46,7 @@ export class AppLayoutComponent {
     area_manager: 'Jefatura de TI',
     admin: 'Administrador del sistema',
   }[this.role()]));
-  readonly navItems = computed(() => navFor(this.role()));
+  readonly navItems = computed(() => navFor(this.role(), this.catalog.canCreateTickets(), this.catalog.allowsInternal()));
   readonly showAreaFilter = computed(() => this.role() === 'requester');
   readonly areaOptions = computed((): readonly UiSelectOption[] => [
     { value: '', label: 'Todas las áreas' },
@@ -52,7 +55,13 @@ export class AppLayoutComponent {
   ]);
 
   constructor() {
-    void this.catalog.refresh();
+    void this.bootstrap();
+  }
+
+  private async bootstrap(): Promise<void> {
+    await this.catalog.refresh();
+    await this.catalog.loadProfile();
+    this.phone.set(this.catalog.contactPhone());
   }
 
   toggleMenu(): void { this.menuOpen.update((value) => !value); }
@@ -70,12 +79,18 @@ export class AppLayoutComponent {
   closePanels(): void { this.profileOpen.set(false); this.notificationsOpen.set(false); }
   openProfile(): void {
     this.phone.set(this.catalog.contactPhone());
+    this.profileEditing.set(false);
     this.profileDialog.set(true);
     this.profileOpen.set(false);
   }
-  savePhone(): void {
-    this.catalog.updatePhone(this.phone().trim());
-    this.profileDialog.set(false);
+  async savePhone(): Promise<void> {
+    try {
+      await this.catalog.updatePhone(this.phone().trim());
+      this.profileEditing.set(false);
+      this.profileDialog.set(false);
+    } catch {
+      this.profileEditing.set(true);
+    }
   }
   async logout(): Promise<void> {
     try {
@@ -88,18 +103,18 @@ export class AppLayoutComponent {
 
 export { homePathFor };
 
-const navFor = (role: TicketsRole): readonly NavItem[] => {
+const navFor = (role: TicketsRole, canCreateTickets: boolean, allowsInternal: boolean): readonly NavItem[] => {
   if (role === 'requester') {
     return [
       { label: 'Mis tickets', path: '/mis-tickets' },
-      { label: 'Crear ticket', path: '/crear' },
+      ...(canCreateTickets ? [{ label: 'Crear ticket', path: '/crear' }] : []),
     ];
   }
   if (role === 'assistant') {
     return [
       { label: 'Inicio', path: '/inicio' },
       { label: 'Cola de tickets', path: '/cola' },
-      { label: 'Tickets internos', path: '/internos' },
+      ...(allowsInternal ? [{ label: 'Tickets internos', path: '/internos' }] : []),
       { label: 'Tickets cerrados', path: '/cerrados' },
     ];
   }
@@ -111,8 +126,8 @@ const navFor = (role: TicketsRole): readonly NavItem[] => {
         path: '/cola',
         children: [
           { label: 'Cola de tickets', path: '/cola' },
-          { label: 'Historial de tickets', path: '/historial' },
-          { label: 'Tickets internos', path: '/tickets-internos' },
+          { label: 'Tickets cerrados', path: '/historial' },
+          ...(allowsInternal ? [{ label: 'Tickets internos', path: '/tickets-internos' }] : []),
         ],
       },
       { label: 'Equipo de TI', path: '/equipo' },

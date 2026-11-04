@@ -9,7 +9,9 @@
     <div><dt class="text-xs text-[#7c8691]">Asignado a</dt><dd class="font-semibold">{{ ticket().assignedName || 'Sin asignar' }}</dd></div>
     <div><dt class="text-xs text-[#7c8691]">Tiempo estimado</dt><dd class="font-semibold">{{ ticket().estimate }}</dd></div>
     <div><dt class="text-xs text-[#7c8691]">Fecha de creación</dt><dd class="font-semibold">{{ labels().createdAt }}</dd></div>
-    <div><dt class="text-xs text-[#7c8691]">Fecha límite</dt><dd class="font-semibold">{{ labels().dueOn }}</dd></div>
+    @if (ticket().kind === 'INTERNAL') {
+      <div><dt class="text-xs text-[#7c8691]">Fecha límite</dt><dd class="font-semibold">{{ labels().dueOn }}</dd></div>
+    }
   </dl>
   <p class="mt-4 text-xs text-[#7c8691]">Descripción</p>
   <p class="whitespace-pre-wrap text-sm font-semibold text-[#1e1e1e]">{{ ticket().description }}</p>
@@ -27,9 +29,7 @@
   <ol class="mt-2 space-y-3 border-l border-[#eed6db] pl-4">
     @for (entry of ticket().history; track entry.at + entry.status) {
       <li>
-        <p class="text-sm font-semibold">{{ labels().status && entry.status }} {{
-          { CREATED: 'Creado', IN_REVIEW: 'En revisión', RETURNED: 'Devuelto', RESOLVED: 'Resuelto', DERIVED: 'Derivado', REOPENED: 'Reaperturado' }[entry.status]
-        }}</p>
+        <p class="text-sm font-semibold">{{ statusLabel(entry.status) }}</p>
         <p class="text-xs text-[#7c8691]">
           @if (entry.fromName && entry.toName) {
             de {{ entry.fromName }} a {{ entry.toName }}
@@ -47,13 +47,24 @@
       <ui-field id="reopen-reason" label="Motivo de reapertura" type="textarea" [(value)]="reason" hint="Mínimo 5 caracteres." />
     </div>
   }
-  @if (mode() === 'status') {
+  @if (mode() === 'status' && changing()) {
     <div class="mt-4 grid gap-4">
-      <ui-select id="next-status" label="Nuevo estado" [options]="statusOptions()" [(value)]="nextStatus" />
-      @if (assigneeOptions().length) {
-        <ui-select id="next-assignee" label="Asignar a" [options]="assigneeOptions()" [(value)]="assignee" />
+      @if (error()) {
+        <p class="text-sm font-semibold text-[#a9002d]">{{ error() }}</p>
       }
-      <ui-field id="status-note" label="Comentario" type="textarea" [(value)]="note" />
+      <ui-select id="next-status" label="Nuevo estado" [options]="statusOptions()" [(value)]="nextStatus" />
+      @if (needsAssignee()) {
+        <ui-select id="next-assignee" label="Derivar a" [options]="assigneeOptions()" [(value)]="assignee" />
+        <ui-field id="status-note" label="Motivo de derivación" type="textarea" [(value)]="note" [required]="true" />
+      } @else if (needsComment()) {
+        <ui-field id="status-note" label="Comentario" type="textarea" [(value)]="note" [required]="true" />
+      }
+      @if (needsComment()) {
+        <div>
+          <label class="mb-2 block text-sm font-semibold" for="status-files">Adjuntar archivos (opcional)</label>
+          <input id="status-files" class="block w-full text-sm" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple (change)="onFiles($event)" />
+        </div>
+      }
     </div>
   }
   <div dialog-footer class="flex flex-wrap gap-3">
@@ -64,10 +75,14 @@
     @if (mode() === 'reopen' && !labels().canReopen) {
       <ui-button [disabled]="true">Plazo de reapertura vencido</ui-button>
     }
-    @if (mode() === 'status') {
-      <ui-button (click)="confirmStatus()">Guardar estado</ui-button>
+    @if (mode() === 'status' && labels().canChange && !changing()) {
+      <ui-button (click)="startChange()">Guardar estado</ui-button>
     }
-    @if (mode() === 'edit') {
+    @if (mode() === 'status' && changing()) {
+      <ui-button variant="secondary" (click)="changing.set(false)">Cancelar</ui-button>
+      <ui-button (click)="confirmStatus()">Confirmar estado</ui-button>
+    }
+    @if (mode() === 'edit' && ticket().status === 'CREATED') {
       <ui-button (click)="editRequested.emit()">Editar</ui-button>
     }
   </div>

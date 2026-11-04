@@ -4,8 +4,8 @@
 </div>
 @if (selectedLevel(); as level) {
   <ui-dialog [title]="'Prioridad ' + { HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja' }[level.level]" [subtitle]="level.description" (closed)="selected.set(null)">
-    <ui-table [columns]="activityColumns" [rows]="activityRows()" />
-    @if (editing()) {
+    <ui-table [columns]="activityColumns" [rows]="activityRows()" [actions]="true" [allowView]="false" [allowEdit]="false" [allowRemove]="true" (remove)="confirmRemove($event)" />
+    @if (adding()) {
       <div class="mt-4 grid gap-4">
         <ui-select id="prio-cat" label="Categoría" [options]="categoryChoices()" [(value)]="category" />
         <ui-field id="prio-activity" label="Actividad" [(value)]="activity" />
@@ -14,11 +14,14 @@
     }
     <div dialog-footer class="flex gap-3">
       <ui-button variant="secondary" (click)="selected.set(null)">Cerrar</ui-button>
-      @if (!editing()) {
-        <ui-button (click)="editing.set(true)">Editar</ui-button>
+      @if (!adding()) {
+        <ui-button (click)="adding.set(true)">Añadir actividad</ui-button>
       } @else {
-        <ui-button (click)="addActivity()">Añadir actividad</ui-button>
+        <ui-button (click)="addActivity()">Guardar actividad</ui-button>
       }
     </div>
   </ui-dialog>
+}
+@if (removingId()) {
+  <ui-confirm title="Eliminar actividad" message="¿Eliminar esta actividad de prioridad?" (cancelled)="removingId.set(null)" (confirmed)="removeActivity()" />
 }

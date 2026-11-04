@@ -48,5 +48,24 @@
   </ui-dialog>
 }
 @if (selected(); as ticket) {
-  <app-ticket-detail [ticket]="ticket" [mode]="selectedMode()" [assigneeOptions]="assigneeChoices()" (closed)="selected.set(null)" (statusChanged)="changeStatus($event)" />
+  @if (editing()) {
+    <ui-dialog title="Editar ticket interno" (closed)="editing.set(false)">
+      @if (notice()) {
+        <ui-alert tone="warning">{{ notice() }}</ui-alert>
+      }
+      <div class="mt-4 grid gap-4">
+        <ui-select id="edit-assigned" label="Asignar a" [options]="assigneeChoices()" [(value)]="assigned" />
+        <ui-field id="edit-due" label="Fecha máxima" type="date" [(value)]="dueOn" />
+        <ui-select id="edit-priority" label="Prioridad" [options]="priorityChoices.slice(1)" [value]="priority()" (valueChange)="setPriority($event)" />
+        <ui-select id="edit-category" label="Categoría" [options]="categoryChoices()" [(value)]="category" />
+        <ui-field id="edit-description" label="Descripción" type="textarea" [(value)]="description" />
+      </div>
+      <div dialog-footer class="flex gap-3">
+        <ui-button variant="secondary" (click)="editing.set(false)">Cancelar</ui-button>
+        <ui-button (click)="saveEdit()">Guardar</ui-button>
+      </div>
+    </ui-dialog>
+  } @else {
+    <app-ticket-detail [ticket]="ticket" [mode]="selectedMode()" [assigneeOptions]="assigneeChoices()" (closed)="selected.set(null)" (statusChanged)="changeStatus($event)" (editRequested)="startEdit()" />
+  }
 }

@@ -4,6 +4,7 @@ import { TicketsCatalogService } from '../../data-access/tickets-catalog.service
 import { PRIORITY_LABELS } from '../../models/ticket-labels';
 import type { TicketPriority } from '../../models/ticket.model';
 import { UiButtonComponent } from '../../../../shared/ui/button/ui-button.component';
+import { UiConfirmComponent } from '../../../../shared/ui/confirm/ui-confirm.component';
 import { UiDialogComponent } from '../../../../shared/ui/dialog/ui-dialog.component';
 import { UiFieldComponent } from '../../../../shared/ui/field/ui-field.component';
 import { UiPageHeaderComponent } from '../../../../shared/ui/page-header/ui-page-header.component';
@@ -12,14 +13,15 @@ import { UiTableComponent, type UiTableColumn, type UiTableRow } from '../../../
 
 @Component({
   selector: 'app-priorities-page',
-  imports: [UiPageHeaderComponent, UiTableComponent, UiDialogComponent, UiButtonComponent, UiFieldComponent, UiSelectComponent],
+  imports: [UiPageHeaderComponent, UiTableComponent, UiDialogComponent, UiConfirmComponent, UiButtonComponent, UiFieldComponent, UiSelectComponent],
   templateUrl: './priorities.page.html',
 })
 export class PrioritiesPage {
   private readonly catalog = inject(TicketsCatalogService);
   readonly crumbs = [{ label: 'Atención UPRIT' }, { label: 'Prioridades' }];
   readonly selected = signal<TicketPriority | null>(null);
-  readonly editing = signal(false);
+  readonly adding = signal(false);
+  readonly removingId = signal<string | null>(null);
   readonly category = signal('');
   readonly activity = signal('');
   readonly estimate = signal('');
@@ -41,7 +43,7 @@ export class PrioritiesPage {
   })));
   readonly selectedLevel = computed(() => this.catalog.priorities().find((item) => item.level === this.selected()) ?? null);
   readonly activityRows = computed(() => this.selectedLevel()?.activities.map((item, index) => ({
-    id: String(index),
+    id: item.id ?? String(index),
     category: item.categoryName,
     activity: item.activity,
     estimate: item.estimate,
@@ -53,7 +55,18 @@ export class PrioritiesPage {
   open(row: UiTableRow): void {
     const level = String(row['id'] ?? '') as TicketPriority;
     this.selected.set(level);
-    this.editing.set(false);
+    this.adding.set(false);
+  }
+
+  confirmRemove(row: UiTableRow): void {
+    const id = String(row['id'] ?? '');
+    if (id) this.removingId.set(id);
+  }
+
+  async removeActivity(): Promise<void> {
+    const id = this.removingId();
+    if (id) await this.catalog.removePriorityActivity(id);
+    this.removingId.set(null);
   }
 
   async addActivity(): Promise<void> {
@@ -67,6 +80,6 @@ export class PrioritiesPage {
     this.category.set('');
     this.activity.set('');
     this.estimate.set('');
-    this.editing.set(false);
+    this.adding.set(false);
   }
 }

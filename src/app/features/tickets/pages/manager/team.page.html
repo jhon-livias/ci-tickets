@@ -6,23 +6,30 @@
   <ui-field id="team-dni" label="DNI" [(value)]="documentQuery" />
 </ui-filter-bar>
 <div class="mt-6">
-  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" (view)="open($event)" (edit)="open($event)" (remove)="confirmRemove($event)" />
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" (view)="open($event, false)" (edit)="open($event, true)" (remove)="confirmRemove($event)" />
 </div>
 @if (selected(); as member) {
-  <ui-dialog [title]="member.isManager ? 'Responsable del área' : (member.id ? 'Editar colaborador' : 'Crear colaborador')" (closed)="selected.set(null)">
+  <ui-dialog [title]="dialogTitle(member)" (closed)="selected.set(null)">
     @if (notice()) { <ui-alert tone="warning">{{ notice() }}</ui-alert> }
     <div class="mt-4 grid gap-4">
-      <ui-field id="member-name" label="Nombres y apellidos" [disabled]="member.isManager" [(value)]="fullName" />
-      <ui-field id="member-dni" label="DNI" [disabled]="member.isManager" [(value)]="document" />
-      <ui-field id="member-role" label="Cargo" [disabled]="member.isManager" [(value)]="roleTitle" />
-      <ui-field id="member-email" label="Correo" [disabled]="member.isManager" [(value)]="email" />
-      <ui-field id="member-phone" label="Teléfono" [disabled]="member.isManager" [(value)]="phone" />
-      <ui-field id="member-functions" label="Funciones" type="textarea" [(value)]="functions" />
-      <ui-field id="member-schedule" label="Horario de trabajo" type="textarea" [(value)]="schedule" />
+      <ui-field id="member-name" label="Nombres y apellidos" [disabled]="!creating() || member.isManager" [(value)]="fullName" />
+      <ui-field id="member-dni" label="DNI" [disabled]="!creating() || member.isManager" [(value)]="document" />
+      <ui-field id="member-role" label="Cargo" [disabled]="!creating() || member.isManager" [(value)]="roleTitle" />
+      <ui-field id="member-email" label="Correo" [disabled]="!creating() || member.isManager" [(value)]="email" />
+      <ui-field id="member-phone" label="Teléfono" [disabled]="!creating() || member.isManager" [(value)]="phone" />
+      <ui-field id="member-functions" label="Funciones" type="textarea" [disabled]="!creating() && !editing()" [(value)]="functions" />
+      <ui-field id="member-schedule" label="Horario de trabajo" type="textarea" [disabled]="!creating() && !editing()" [(value)]="schedule" />
     </div>
-    <div dialog-footer class="flex gap-3">
+    <div dialog-footer class="flex flex-wrap gap-3">
       <ui-button variant="secondary" (click)="selected.set(null)">Cancelar</ui-button>
-      <ui-button (click)="save()">Guardar</ui-button>
+      @if (!creating() && !editing()) {
+        <ui-button (click)="editing.set(true)">Editar</ui-button>
+        @if (!member.isManager) {
+          <ui-button variant="secondary" (click)="confirmRemoveMember()">Eliminar</ui-button>
+        }
+      } @else {
+        <ui-button (click)="save()">Guardar</ui-button>
+      }
     </div>
   </ui-dialog>
 }

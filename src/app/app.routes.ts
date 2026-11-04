@@ -30,7 +30,7 @@ export const routes: Routes = [
       { path: 'cola', title: 'Cola de tickets', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant', 'area_manager'])], resolve: { list: colaListResolver } },
       { path: 'internos', title: 'Tickets internos', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant'])], data: { list: assistantInternal } },
       { path: 'cerrados', title: 'Tickets cerrados', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant'])], data: { list: assistantClosed } },
-      { path: 'historial', title: 'Historial de tickets', component: TicketsListPage, canActivate: [ticketsRoleGuard(['area_manager'])], data: { list: managerHistory } },
+      { path: 'historial', title: 'Tickets cerrados', component: TicketsListPage, canActivate: [ticketsRoleGuard(['area_manager'])], data: { list: managerHistory } },
       { path: 'tickets-internos', title: 'Tickets internos', component: ManagerInternalPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'equipo', title: 'Equipo de TI', component: TeamPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'prioridades', title: 'Prioridades', component: PrioritiesPage, canActivate: [ticketsRoleGuard(['area_manager'])] },

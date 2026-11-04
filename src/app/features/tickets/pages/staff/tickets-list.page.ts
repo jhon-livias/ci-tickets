@@ -150,10 +150,15 @@ export class TicketsListPage {
     this.selected.set(this.catalog.ticketById(rowId(row)));
   }
 
-  async changeStatus(event: { readonly status: TicketStatus; readonly note: string; readonly assignedName: string }): Promise<void> {
+  async changeStatus(event: {
+    readonly status: TicketStatus;
+    readonly note: string;
+    readonly assignedName: string;
+    readonly attachmentNames: readonly string[];
+  }): Promise<void> {
     const ticket = this.selected();
     if (!ticket) return;
-    await this.catalog.changeStatus(ticket.id, event.status, event.note, event.assignedName || undefined);
+    await this.catalog.changeStatus(ticket.id, event.status, event.note, event.assignedName || undefined, event.attachmentNames);
     this.selected.set(this.catalog.ticketById(ticket.id));
   }
 

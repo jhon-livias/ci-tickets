@@ -31,6 +31,8 @@ export class TeamPage {
   readonly functions = signal('');
   readonly schedule = signal('');
   readonly notice = signal<string | null>(null);
+  readonly editing = signal(false);
+  readonly creating = signal(false);
   readonly columns: readonly UiTableColumn[] = [
     { key: 'name', label: 'Nombres y apellidos', sortable: true },
     { key: 'document', label: 'DNI' },
@@ -48,16 +50,34 @@ export class TeamPage {
     })
     .map((member) => ({ id: member.id, name: member.fullName, document: member.document, role: member.roleTitle, email: member.email })));
 
+  dialogTitle(member: TeamMember): string {
+    if (member.isManager) return 'Responsable del área';
+    if (!member.id) return 'Crear colaborador';
+    return this.editing() ? 'Editar colaborador' : 'Ver colaborador';
+  }
+
   openCreate(): void {
+    this.creating.set(true);
+    this.editing.set(true);
     this.selected.set({ id: '', fullName: '', document: '', roleTitle: '', email: '', phone: '', functions: '', schedule: '', isManager: false });
     this.fill(this.selected());
   }
 
-  open(row: UiTableRow): void {
+  open(row: UiTableRow, edit: boolean): void {
     const member = this.catalog.team().find((item) => item.id === String(row['id'] ?? ''));
     if (!member) return;
+    this.creating.set(false);
+    this.editing.set(edit);
     this.selected.set(member);
     this.fill(member);
+  }
+
+  confirmRemoveMember(): void {
+    const member = this.selected();
+    if (member && !member.isManager) {
+      this.removing.set(member);
+      this.selected.set(null);
+    }
   }
 
   confirmRemove(row: UiTableRow): void {

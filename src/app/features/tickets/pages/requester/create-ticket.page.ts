@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormRoot, form, minLength, required } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
@@ -61,6 +61,23 @@ export class CreateTicketPage {
   );
   readonly thirdParty = computed(() => this.draft().about === 'student' || this.draft().about === 'teacher');
 
+  constructor() {
+    effect(() => {
+      const areas = this.catalog.receivingAreas();
+      const preferred = areas.find((area) => area.code === 'TI') ?? areas[0];
+      if (!preferred) return;
+      const current = this.draft();
+      if (!current.areaId) this.draft.update((draft) => ({ ...draft, areaId: preferred.id }));
+    });
+    effect(() => {
+      const areaId = this.draft().areaId;
+      const categories = this.catalog.categories().filter((category) => category.enabled && category.areaId === areaId);
+      const preferred = categories[0];
+      if (!areaId || !preferred || this.draft().categoryId) return;
+      this.draft.update((draft) => ({ ...draft, categoryId: preferred.id }));
+    });
+  }
+
   patch(partial: Partial<CreateTicketDraft>): void {
     this.draft.update((current) => ({ ...current, ...partial }));
   }
@@ -73,8 +90,9 @@ export class CreateTicketPage {
   }
 
   resetForm(): void {
+    const areas = this.catalog.receivingAreas();
     this.draft.set({
-      areaId: this.catalog.receivingAreas()[0]?.id ?? '',
+      areaId: (areas.find((area) => area.code === 'TI') ?? areas[0])?.id ?? '',
       about: '',
       otherName: '',
       otherDocument: '',

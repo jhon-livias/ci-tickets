@@ -31,7 +31,10 @@ export class TicketsCatalogService {
   private readonly categoriesState = signal<readonly TicketCategory[]>([]);
   private readonly teamState = signal<readonly TeamMember[]>([]);
   private readonly prioritiesState = signal<readonly PriorityLevel[]>([]);
-  private readonly profilePhone = signal('987123456');
+  private readonly profilePhone = signal('');
+  private readonly profileDocument = signal('');
+  private readonly profileEmail = signal('');
+  private readonly profileCountry = signal('+51');
 
   readonly tickets = this.ticketsState.asReadonly();
   readonly areas = this.areasState.asReadonly();
@@ -39,14 +42,43 @@ export class TicketsCatalogService {
   readonly team = this.teamState.asReadonly();
   readonly priorities = this.prioritiesState.asReadonly();
   readonly contactPhone = this.profilePhone.asReadonly();
+  readonly contactDocument = this.profileDocument.asReadonly();
+  readonly contactEmail = this.profileEmail.asReadonly();
+  readonly contactCountry = this.profileCountry.asReadonly();
   readonly receivingAreas = computed(() => this.areasState().filter((area) => area.enabled && area.receivesTickets));
+  readonly canCreateTickets = computed(() => this.areasState().some((area) => area.enabled && area.canCreateTickets));
+  readonly allowsInternal = computed(() => this.areasState().some((area) => area.enabled && area.allowsInternal));
 
   ticketById(id: string): Ticket | null {
     return this.ticketsState().find((ticket) => ticket.id === id) ?? null;
   }
 
-  updatePhone(phone: string): void {
-    this.profilePhone.set(phone);
+  async loadProfile(): Promise<void> {
+    const response = await fetch('/api/v1/auth/profile', { credentials: 'include' });
+    if (!response.ok) return;
+    const payload = await response.json() as {
+      documentNumber?: unknown;
+      personalEmail?: unknown;
+      email?: unknown;
+      mobile?: unknown;
+      mobileCountry?: unknown;
+    };
+    if (typeof payload.documentNumber === 'string') this.profileDocument.set(payload.documentNumber);
+    const email = typeof payload.personalEmail === 'string' && payload.personalEmail
+      ? payload.personalEmail
+      : typeof payload.email === 'string' ? payload.email : '';
+    this.profileEmail.set(email);
+    if (typeof payload.mobile === 'string') this.profilePhone.set(payload.mobile);
+    if (typeof payload.mobileCountry === 'string' && payload.mobileCountry) this.profileCountry.set(payload.mobileCountry);
+  }
+
+  async updatePhone(phone: string): Promise<void> {
+    const mobile = phone.replace(/\D/g, '');
+    await this.request<void>('PATCH', '/contact', {
+      mobileCountry: this.profileCountry() || '+51',
+      mobile,
+    }, '/api/v1/auth/profile');
+    this.profilePhone.set(mobile);
   }
 
   async refresh(): Promise<void> {
@@ -93,8 +125,25 @@ export class TicketsCatalogService {
     await this.refresh();
   }
 
-  async changeStatus(id: string, status: TicketStatus, note: string, assignedName?: string): Promise<void> {
-    await this.request<void>('POST', `/${id}/status`, { status, note, assignedName });
+  async changeStatus(
+    id: string,
+    status: TicketStatus,
+    note: string,
+    assignedName?: string,
+    attachmentNames: readonly string[] = [],
+  ): Promise<void> {
+    await this.request<void>('POST', `/${id}/status`, { status, note, assignedName, attachmentNames });
+    await this.refresh();
+  }
+
+  async updateInternalTicket(id: string, input: CreateInternalTicketInput): Promise<void> {
+    await this.request<void>('PUT', `/internal/${id}`, {
+      assignedName: input.assignedName,
+      dueOn: input.dueOn,
+      priority: input.priority,
+      categoryName: input.categoryName,
+      description: input.description,
+    });
     await this.refresh();
   }
 
@@ -162,6 +211,11 @@ export class TicketsCatalogService {
     await this.refresh();
   }
 
+  async removePriorityActivity(id: string): Promise<void> {
+    await this.request<void>('DELETE', `/priorities/activities/${id}`);
+    await this.refresh();
+  }
+
   oldestPendingDate(): string {
     const pending = this.ticketsState().filter((ticket) => ticket.status === 'CREATED' || ticket.status === 'IN_REVIEW');
     if (!pending.length) {
@@ -173,8 +227,8 @@ export class TicketsCatalogService {
       .sort()[0] ?? new Date().toISOString().slice(0, 10);
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${ticketsBaseUrl}${path}`, {
+  private async request<T>(method: string, path: string, body?: unknown, base = ticketsBaseUrl): Promise<T> {
+    const response = await fetch(`${base}${path}`, {
       method,
       credentials: 'include',
       headers: {

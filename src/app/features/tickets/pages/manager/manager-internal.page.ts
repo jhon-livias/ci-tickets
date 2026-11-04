@@ -63,9 +63,13 @@ export class ManagerInternalPage {
   readonly assigneeChoices = computed((): readonly UiSelectOption[] =>
     this.catalog.team().filter((member) => !member.isManager).map((member) => ({ value: member.fullName, label: member.fullName })),
   );
-  readonly categoryChoices = computed((): readonly UiSelectOption[] =>
-    this.catalog.categories().filter((category) => category.areaId === 'ti').map((category) => ({ value: category.name, label: category.name })),
-  );
+  readonly categoryChoices = computed((): readonly UiSelectOption[] => {
+    const ti = this.catalog.areas().find((area) => area.code === 'TI');
+    return this.catalog.categories()
+      .filter((category) => category.enabled && (!ti || category.areaId === ti.id))
+      .map((category) => ({ value: category.name, label: category.name }));
+  });
+  readonly editing = signal(false);
   readonly emittedColumns: readonly UiTableColumn[] = [
     { key: 'code', label: 'Código', sortable: true },
     { key: 'createdAt', label: 'Fecha y hora' },
@@ -142,10 +146,45 @@ export class ManagerInternalPage {
     }
   }
 
-  async changeStatus(event: { readonly status: TicketStatus; readonly note: string; readonly assignedName: string }): Promise<void> {
+  async changeStatus(event: {
+    readonly status: TicketStatus;
+    readonly note: string;
+    readonly assignedName: string;
+    readonly attachmentNames: readonly string[];
+  }): Promise<void> {
     const ticket = this.selected();
     if (!ticket) return;
-    await this.catalog.changeStatus(ticket.id, event.status, event.note, event.assignedName || undefined);
+    await this.catalog.changeStatus(ticket.id, event.status, event.note, event.assignedName || undefined, event.attachmentNames);
+    this.selected.set(this.catalog.ticketById(ticket.id));
+  }
+
+  startEdit(): void {
+    const ticket = this.selected();
+    if (!ticket || ticket.status !== 'CREATED') return;
+    this.assigned.set(ticket.assignedName ?? '');
+    this.dueOn.set((ticket.dueOn ?? '').slice(0, 10));
+    this.priority.set(ticket.priority);
+    this.category.set(ticket.categoryName);
+    this.description.set(ticket.description);
+    this.editing.set(true);
+  }
+
+  async saveEdit(): Promise<void> {
+    const ticket = this.selected();
+    if (!ticket) return;
+    if (!this.assigned() || !this.dueOn() || !this.priority() || !this.category() || this.description().trim().length < 10) {
+      this.notice.set('Completa asignado, fecha límite, prioridad, categoría y una descripción detallada.');
+      return;
+    }
+    await this.catalog.updateInternalTicket(ticket.id, {
+      assignedName: this.assigned(),
+      dueOn: this.dueOn(),
+      priority: this.priority() as TicketPriority,
+      categoryName: this.category(),
+      description: this.description().trim(),
+      attachmentNames: [],
+    });
+    this.editing.set(false);
     this.selected.set(this.catalog.ticketById(ticket.id));
   }
 }

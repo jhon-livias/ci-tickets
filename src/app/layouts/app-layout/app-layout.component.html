@@ -76,15 +76,21 @@
   </section>
 </main>
 @if (profileDialog()) {
-  <ui-dialog title="Mi perfil" subtitle="Solo puedes actualizar tu número de contacto." (closed)="profileDialog.set(false)">
+  <ui-dialog title="Mi perfil" subtitle="El DNI y el correo no se editan aquí. El celular se actualiza con Editar y luego Guardar." (closed)="profileDialog.set(false)">
     <div class="grid gap-4">
       <ui-field id="profile-name" label="Nombre" [value]="displayName()" [disabled]="true" />
       <ui-field id="profile-role" label="Perfil" [value]="roleLabel()" [disabled]="true" />
-      <ui-field id="profile-phone" label="Número de contacto" type="tel" [(value)]="phone" />
+      <ui-field id="profile-dni" label="DNI" [value]="documentNumber()" [disabled]="true" />
+      <ui-field id="profile-email" label="Correo" [value]="profileEmail()" [disabled]="true" />
+      <ui-field id="profile-phone" label="Número de contacto" type="tel" [disabled]="!profileEditing()" [(value)]="phone" />
     </div>
     <div dialog-footer class="flex gap-3">
       <ui-button variant="secondary" (click)="profileDialog.set(false)">Cancelar</ui-button>
-      <ui-button (click)="savePhone()">Guardar</ui-button>
+      @if (!profileEditing()) {
+        <ui-button (click)="profileEditing.set(true)">Editar</ui-button>
+      } @else {
+        <ui-button (click)="savePhone()">Guardar</ui-button>
+      }
     </div>
   </ui-dialog>
 }

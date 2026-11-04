@@ -53,7 +53,7 @@ export const managerQueue: TicketsListConfig = {
 };
 
 export const managerHistory: TicketsListConfig = {
-  title: 'Historial de tickets',
+  title: 'Tickets cerrados',
   description: 'Tickets resueltos y fecha de cierre.',
   statuses: ['RESOLVED'],
   kind: 'EXTERNAL',

@@ -5,6 +5,7 @@ import { UiDialogComponent } from '../../../../shared/ui/dialog/ui-dialog.compon
 import { UiFieldComponent } from '../../../../shared/ui/field/ui-field.component';
 import { UiSelectComponent, type UiSelectOption } from '../../../../shared/ui/select/ui-select.component';
 import { KIND_LABELS, PRIORITY_LABELS, STATUS_LABELS, canReopenTicket, formatDate, formatDateTime } from '../../models/ticket-labels';
+import { nextStatuses, statusNeedsAssignee, statusNeedsComment } from '../../models/status-transition';
 import type { Ticket, TicketStatus } from '../../models/ticket.model';
 
 export type TicketDetailMode = 'readonly' | 'reopen' | 'status' | 'edit';
@@ -20,29 +21,26 @@ export class TicketDetailComponent {
   readonly assigneeOptions = input<readonly UiSelectOption[]>([]);
   readonly closed = output<void>();
   readonly reopen = output<string>();
-  readonly statusChanged = output<{ readonly status: TicketStatus; readonly note: string; readonly assignedName: string }>();
+  readonly statusChanged = output<{
+    readonly status: TicketStatus;
+    readonly note: string;
+    readonly assignedName: string;
+    readonly attachmentNames: readonly string[];
+  }>();
   readonly editRequested = output<void>();
 
   readonly reason = signal('');
   readonly note = signal('');
   readonly nextStatus = signal('');
   readonly assignee = signal('');
-  readonly statusOptions = computed((): readonly UiSelectOption[] => {
-    if (this.ticket().kind === 'INTERNAL') {
-      return [
-        { value: 'CREATED', label: 'Creado' },
-        { value: 'IN_REVIEW', label: 'En revisión' },
-        { value: 'RESOLVED', label: 'Resuelto' },
-      ];
-    }
-    return [
-      { value: 'CREATED', label: 'Creado' },
-      { value: 'IN_REVIEW', label: 'En revisión' },
-      { value: 'RETURNED', label: 'Devuelto' },
-      { value: 'DERIVED', label: 'Derivado' },
-      { value: 'RESOLVED', label: 'Resuelto' },
-    ];
-  });
+  readonly files = signal<readonly string[]>([]);
+  readonly changing = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly statusOptions = computed((): readonly UiSelectOption[] =>
+    nextStatuses(this.ticket().status).map((status) => ({ value: status, label: STATUS_LABELS[status] })),
+  );
+  readonly needsAssignee = computed(() => statusNeedsAssignee(this.nextStatus()));
+  readonly needsComment = computed(() => statusNeedsComment(this.nextStatus()));
   readonly labels = computed(() => {
     const ticket = this.ticket();
     return {
@@ -52,11 +50,32 @@ export class TicketDetailComponent {
       createdAt: formatDateTime(ticket.createdAt),
       dueOn: formatDate(ticket.dueOn),
       canReopen: canReopenTicket(ticket.resolvedAt, ticket.status),
+      canChange: nextStatuses(ticket.status).length > 0,
     };
   });
 
   protected when(value: string): string {
     return formatDateTime(value);
+  }
+
+  protected statusLabel(status: TicketStatus): string {
+    return STATUS_LABELS[status];
+  }
+
+  protected startChange(): void {
+    const options = this.statusOptions();
+    this.nextStatus.set(options.length === 1 ? options[0].value : '');
+    this.note.set('');
+    this.assignee.set('');
+    this.files.set([]);
+    this.error.set(null);
+    this.changing.set(true);
+  }
+
+  protected onFiles(event: Event): void {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || !input.files) return;
+    this.files.set([...input.files].slice(0, 5).map((file) => file.name));
   }
 
   protected confirmReopen(): void {
@@ -67,7 +86,24 @@ export class TicketDetailComponent {
 
   protected confirmStatus(): void {
     const status = this.nextStatus() as TicketStatus;
-    if (!status) return;
-    this.statusChanged.emit({ status, note: this.note().trim(), assignedName: this.assignee() });
+    if (!status || status === this.ticket().status) {
+      this.error.set('Ese estado ya está registrado.');
+      return;
+    }
+    if (this.needsAssignee() && !this.assignee()) {
+      this.error.set('Indica a quién se deriva el ticket.');
+      return;
+    }
+    if (this.needsComment() && this.note().trim().length < 5) {
+      this.error.set('El comentario es obligatorio para este estado.');
+      return;
+    }
+    this.statusChanged.emit({
+      status,
+      note: this.note().trim(),
+      assignedName: this.assignee(),
+      attachmentNames: this.files(),
+    });
+    this.changing.set(false);
   }
 }
