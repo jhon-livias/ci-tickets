@@ -4,7 +4,7 @@ import { UiButtonComponent } from '../../../../shared/ui/button/ui-button.compon
 import { UiDialogComponent } from '../../../../shared/ui/dialog/ui-dialog.component';
 import { UiFieldComponent } from '../../../../shared/ui/field/ui-field.component';
 import { UiSelectComponent, type UiSelectOption } from '../../../../shared/ui/select/ui-select.component';
-import { KIND_LABELS, PRIORITY_LABELS, STATUS_LABELS, canReopenTicket, formatDate, formatDateTime, historyCaption } from '../../models/ticket-labels';
+import { PRIORITY_LABELS, STATUS_LABELS, canReopenTicket, formatDate, formatDateTime, historyCaption } from '../../models/ticket-labels';
 import { nextStatuses, statusNeedsAssignee, statusNeedsComment } from '../../models/status-transition';
 import type { Ticket, TicketHistoryEntry, TicketStatus } from '../../models/ticket.model';
 
@@ -47,7 +47,6 @@ export class TicketDetailComponent {
     return {
       status: STATUS_LABELS[ticket.status],
       priority: PRIORITY_LABELS[ticket.priority],
-      kind: KIND_LABELS[ticket.kind],
       createdAt: formatDateTime(ticket.createdAt),
       dueOn: formatDate(ticket.dueOn),
       canReopen: canReopenTicket(ticket.resolvedAt, ticket.status),

@@ -4,14 +4,14 @@
     <ui-select id="list-colab" label="Colaborador" [options]="collaboratorChoices()" [(value)]="collaborator" />
   }
   <ui-field id="list-code" label="Código / N.º ticket" [(value)]="code" />
+  @if (config().showKindFilter) {
+    <ui-select id="list-kind" label="Tipo de ticket" [options]="kindChoices" [(value)]="kind" />
+  }
   <ui-field id="list-from" label="Fecha inicial" type="date" [(value)]="from" />
   <ui-field id="list-to" label="Fecha final" type="date" [(value)]="to" />
   <ui-field id="list-requester" label="Solicitante" [(value)]="requester" />
   <ui-select id="list-status" label="Estado" [options]="statusChoices()" [(value)]="status" />
   <ui-select id="list-priority" label="Prioridad" [options]="priorityChoices" [(value)]="priority" />
-  @if (config().showKindFilter) {
-    <ui-select id="list-kind" label="Tipo de ticket" [options]="kindChoices" [(value)]="kind" />
-  }
   <ui-button variant="secondary" (click)="clearFilters()">Limpiar filtros</ui-button>
 </ui-filter-bar>
 <div class="mt-6">

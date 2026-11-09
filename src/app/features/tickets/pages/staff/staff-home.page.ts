@@ -48,7 +48,7 @@ export class StaffHomePage {
     if (role === 'area_manager') {
       return [
         { label: 'Tickets recibidos', value: tickets.length, hint: 'Periodo seleccionado' },
-        { label: 'Pendientes', value: tickets.filter((ticket) => ticket.status === 'CREATED' || ticket.status === 'IN_REVIEW').length, hint: 'Externos e internos' },
+        { label: 'Pendientes', value: tickets.filter((ticket) => ticket.status === 'CREATED' || ticket.status === 'IN_REVIEW').length, hint: 'Tickets activos' },
         { label: 'Resueltos', value: tickets.filter((ticket) => ticket.status === 'RESOLVED').length, hint: 'Tickets finalizados' },
         { label: 'Integrantes del equipo', value: this.catalog.team().length, hint: 'Equipo registrado (incluido responsable)' },
       ];

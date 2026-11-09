@@ -49,7 +49,6 @@ export class TicketsCatalogService {
   readonly canCreateTickets = computed(() => this.areasState().some((area) => area.enabled && area.canCreateTickets));
   readonly tiArea = computed(() => this.areasState().find((area) => area.enabled && area.code === 'TI') ?? null);
   readonly receivesTickets = computed(() => this.tiArea()?.receivesTickets === true);
-  readonly allowsInternal = computed(() => this.tiArea()?.allowsInternal === true);
 
   ticketById(id: string): Ticket | null {
     return this.ticketsState().find((ticket) => ticket.id === id) ?? null;

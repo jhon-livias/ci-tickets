@@ -46,7 +46,7 @@ export class AppLayoutComponent {
     area_manager: 'Jefatura de TI',
     admin: 'Administrador del sistema',
   }[this.role()]));
-  readonly navItems = computed(() => navFor(this.role(), this.catalog.canCreateTickets(), this.catalog.allowsInternal(), this.catalog.receivesTickets()));
+  readonly navItems = computed(() => navFor(this.role(), this.catalog.canCreateTickets(), this.catalog.receivesTickets()));
   readonly showAreaFilter = computed(() => this.role() === 'requester');
   readonly areaOptions = computed((): readonly UiSelectOption[] => [
     { value: '', label: 'Todas las áreas' },
@@ -106,7 +106,6 @@ export { homePathFor };
 const navFor = (
   role: TicketsRole,
   canCreateTickets: boolean,
-  allowsInternal: boolean,
   receivesTickets: boolean,
 ): readonly NavItem[] => {
   if (role === 'requester') {
@@ -119,7 +118,6 @@ const navFor = (
     return [
       { label: 'Inicio', path: '/inicio' },
       ...(receivesTickets ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
-      ...(allowsInternal ? [{ label: 'Tickets internos', path: '/internos' }] : []),
       ...(receivesTickets ? [{ label: 'Tickets cerrados', path: '/cerrados' }] : []),
     ];
   }
@@ -127,7 +125,6 @@ const navFor = (
     const ticketChildren = [
       ...(receivesTickets ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
       ...(receivesTickets ? [{ label: 'Tickets cerrados', path: '/historial' }] : []),
-      ...(allowsInternal ? [{ label: 'Tickets internos', path: '/tickets-internos' }] : []),
     ];
     return [
       { label: 'Inicio', path: '/inicio' },

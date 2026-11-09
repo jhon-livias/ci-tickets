@@ -50,13 +50,14 @@ export const formatDateTime = (value: string): string => {
 };
 
 export const historyCaption = (entry: TicketHistoryEntry): string => {
-  if (entry.status === 'IN_REVIEW') return `por ${entry.actorName}`;
-  if (entry.status === 'DERIVED' && entry.fromName && entry.toName) return `de ${entry.fromName} a ${entry.toName}`;
-  if (entry.status === 'DERIVED') return `por ${entry.actorName}`;
-  if (entry.status === 'RESOLVED') return `por ${entry.actorName}`;
-  if (entry.status === 'RETURNED') return `por ${entry.actorName}`;
-  if (entry.status === 'REOPENED') return `por ${entry.actorName}`;
-  return `${entry.actorName} · ${entry.actorArea}`;
+  const area = entry.actorArea;
+  if (entry.status === 'IN_REVIEW') return `por ${entry.actorName} · ${area}`;
+  if (entry.status === 'DERIVED' && entry.fromName && entry.toName) return `de ${entry.fromName} a ${entry.toName} · ${area}`;
+  if (entry.status === 'DERIVED') return `por ${entry.actorName} · ${area}`;
+  if (entry.status === 'RESOLVED') return `por ${entry.actorName} · ${area}`;
+  if (entry.status === 'RETURNED') return `por ${entry.actorName} · ${area}`;
+  if (entry.status === 'REOPENED') return `por ${entry.actorName} · ${area}`;
+  return `${entry.actorName} · ${area}`;
 };
 
 export const formatDate = (value: string | null): string => {

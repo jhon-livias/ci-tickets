@@ -6,12 +6,11 @@ import { TicketsLoginComponent } from './features/auth/pages/login/tickets-login
 import { AreasPage } from './features/tickets/pages/admin/areas.page';
 import { CategoriesPage } from './features/tickets/pages/admin/categories.page';
 import { OrgChartPage } from './features/tickets/pages/admin/org-chart.page';
-import { ManagerInternalPage } from './features/tickets/pages/manager/manager-internal.page';
 import { PrioritiesPage } from './features/tickets/pages/manager/priorities.page';
 import { TeamPage } from './features/tickets/pages/manager/team.page';
 import { CreateTicketPage } from './features/tickets/pages/requester/create-ticket.page';
 import { MyTicketsPage } from './features/tickets/pages/requester/my-tickets.page';
-import { assistantClosed, assistantInternal, managerHistory } from './features/tickets/pages/staff/ticket-list.configs';
+import { assistantClosed, managerHistory } from './features/tickets/pages/staff/ticket-list.configs';
 import { StaffHomePage } from './features/tickets/pages/staff/staff-home.page';
 import { TicketsListPage } from './features/tickets/pages/staff/tickets-list.page';
 import { AppLayoutComponent } from './layouts/app-layout/app-layout.component';
@@ -28,10 +27,8 @@ export const routes: Routes = [
       { path: 'crear', title: 'Crear ticket', component: CreateTicketPage, canActivate: [ticketsRoleGuard(['requester'])] },
       { path: 'inicio', title: 'Inicio', component: StaffHomePage, canActivate: [ticketsRoleGuard(['assistant', 'area_manager', 'admin'])] },
       { path: 'cola', title: 'Cola de tickets', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant', 'area_manager'])], resolve: { list: colaListResolver } },
-      { path: 'internos', title: 'Tickets internos', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant'])], data: { list: assistantInternal } },
       { path: 'cerrados', title: 'Tickets cerrados', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant'])], data: { list: assistantClosed } },
       { path: 'historial', title: 'Tickets cerrados', component: TicketsListPage, canActivate: [ticketsRoleGuard(['area_manager'])], data: { list: managerHistory } },
-      { path: 'tickets-internos', title: 'Tickets internos', component: ManagerInternalPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'equipo', title: 'Equipo de TI', component: TeamPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'prioridades', title: 'Prioridades', component: PrioritiesPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'areas', title: 'Áreas', component: AreasPage, canActivate: [ticketsRoleGuard(['admin'])] },

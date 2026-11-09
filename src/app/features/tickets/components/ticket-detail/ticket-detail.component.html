@@ -10,7 +10,6 @@
     @if (staffFields()) {
       <div><dt class="text-xs text-[#7c8691]">Estado actual</dt><dd class="font-semibold">{{ labels().status }}</dd></div>
       <div><dt class="text-xs text-[#7c8691]">Prioridad</dt><dd class="font-semibold">{{ labels().priority }}</dd></div>
-      <div><dt class="text-xs text-[#7c8691]">Tipo</dt><dd class="font-semibold">{{ labels().kind }}</dd></div>
       <div><dt class="text-xs text-[#7c8691]">Asignado a</dt><dd class="font-semibold">{{ ticket().assignedName || 'Sin asignar' }}</dd></div>
     }
     <div><dt class="text-xs text-[#7c8691]">Tiempo estimado</dt><dd class="font-semibold">{{ ticket().estimate }}</dd></div>
