@@ -16,12 +16,12 @@ export class TicketsAuthService {
   readonly user = signal<TicketsUser | null>(null);
   private csrfToken: string | null = null;
 
-  async login(username: string, password: string, recaptchaToken: string): Promise<void> {
+  async login(username: string, password: string, recaptchaToken: string, totpCode?: string): Promise<void> {
     const response = await fetch(`${authBaseUrl}/login`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, recaptchaToken }),
+      body: JSON.stringify({ username, password, recaptchaToken, ...(totpCode ? { totpCode } : {}) }),
     });
     if (!response.ok) throw new Error(await loginErrorMessage(response));
     const session = toSession(await response.json() as unknown);
