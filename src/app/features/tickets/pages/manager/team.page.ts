@@ -36,7 +36,7 @@ export class TeamPage {
   readonly accountNotice = signal<string | null>(null);
   readonly submitted = signal(false);
   readonly errors = computed(() => {
-    if (!this.submitted() || this.selected()?.isManager) return {} as Record<string, string>;
+    if (!this.submitted() || this.selected()?.isManager) return { fullName: '', document: '', roleTitle: '', email: '', areaIds: '' };
     return {
       fullName: this.fullName().trim().length >= 3 ? '' : 'Escribe nombres y apellidos.',
       document: /^\d{8}$/.test(this.document().trim()) ? '' : 'El DNI debe tener 8 dígitos.',

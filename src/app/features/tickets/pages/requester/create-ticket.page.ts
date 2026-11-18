@@ -71,7 +71,7 @@ export class CreateTicketPage {
   );
   readonly thirdParty = computed(() => this.draft().about === 'student' || this.draft().about === 'teacher');
   readonly errors = computed(() => {
-    if (!this.submitted()) return {} as Record<string, string>;
+    if (!this.submitted()) return { originAreaId: '', areaId: '', about: '', otherName: '', otherDocument: '', categoryId: '', description: '' };
     const data = this.draft();
     const description = data.description.trim();
     return {

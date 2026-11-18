@@ -42,7 +42,7 @@ export class AreasPage {
   readonly accountNotice = signal<string | null>(null);
   readonly submitted = signal(false);
   readonly errors = computed(() => {
-    if (!this.submitted()) return {} as Record<string, string>;
+    if (!this.submitted()) return { code: '', name: '', managerName: '', managerDocument: '', managerEmail: '' };
     const code = this.code().trim().toUpperCase();
     return {
       code: /^[A-Z]{2,6}$/.test(code) ? '' : 'Usa siglas de 2 a 6 letras, sin números.',
