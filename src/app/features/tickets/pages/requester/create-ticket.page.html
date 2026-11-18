@@ -2,21 +2,24 @@
 @if (notice()) {
   <div class="mt-4"><ui-alert tone="warning">{{ notice() }}</ui-alert></div>
 }
+@if (!areaOptions().length) {
+  <div class="mt-4"><ui-alert tone="info">Todavía no hay áreas habilitadas para recibir tickets.</ui-alert></div>
+}
 <form class="mt-6 max-w-3xl space-y-4" [formRoot]="ticketForm" (submit)="submit($event)">
-  <ui-select id="area-destino" label="¿A qué área va dirigido?" [options]="areaOptions()" [required]="true" [value]="draft().areaId" (valueChange)="patch({ areaId: $event, categoryId: '' })" />
-  <ui-select id="sobre-quien" label="¿Quién tiene el problema?" [options]="aboutOptions" [required]="true" [value]="draft().about" (valueChange)="patch({ about: $event })" />
-  @if (thirdParty()) {
-    <ui-field id="persona-nombre" label="Nombres y apellidos" [required]="true" [value]="draft().otherName" (valueChange)="patch({ otherName: $event })" />
-    <ui-field id="persona-dni" label="DNI" [required]="true" placeholder="8 dígitos" [value]="draft().otherDocument" (valueChange)="patch({ otherDocument: $event })" />
+  @if (originOptions().length) {
+    <ui-select id="area-origen" label="Área a la que perteneces" [options]="originOptions()" [required]="true" [error]="errors().originAreaId" [value]="draft().originAreaId" (valueChange)="patch({ originAreaId: $event })" />
   }
-  <ui-select id="categoria" label="¿Qué tipo de problema tienes?" [options]="categoryOptions()" [required]="true" placeholder="Selecciona opción" [value]="draft().categoryId" (valueChange)="patch({ categoryId: $event })" />
-  <ui-field id="descripcion" label="Descripción del problema" type="textarea" [required]="true" hint="No incluyas contraseñas ni información confidencial." [value]="draft().description" (valueChange)="patch({ description: $event })" />
-  <div>
-    <label class="mb-2 block text-sm font-semibold" for="adjuntos">Adjuntar captura o documentos (opcional)</label>
-    <input id="adjuntos" class="block w-full text-sm" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple (change)="onFiles($event)" />
-  </div>
+  <ui-select id="area-destino" label="¿A qué área va dirigido?" [options]="areaOptions()" [required]="true" [error]="errors().areaId" [value]="draft().areaId" (valueChange)="patch({ areaId: $event, categoryId: '' })" />
+  <ui-select id="sobre-quien" label="¿Quién tiene el problema?" [options]="aboutOptions" [required]="true" [error]="errors().about" [value]="draft().about" (valueChange)="patch({ about: $event })" />
+  @if (thirdParty()) {
+    <ui-field id="persona-nombre" label="Nombres y apellidos" [required]="true" [error]="errors().otherName" [value]="draft().otherName" (valueChange)="patch({ otherName: $event })" />
+    <ui-field id="persona-dni" label="DNI" [required]="true" placeholder="8 dígitos" hint="Solo números, 8 dígitos." [error]="errors().otherDocument" [value]="draft().otherDocument" (valueChange)="patch({ otherDocument: $event })" />
+  }
+  <ui-select id="categoria" label="¿Qué tipo de problema tienes?" [options]="categoryOptions()" [required]="true" placeholder="Selecciona opción" [error]="draft().areaId && !categoryOptions().length ? 'Esta área no tiene categorías disponibles.' : errors().categoryId" [value]="draft().categoryId" (valueChange)="patch({ categoryId: $event })" />
+  <ui-field id="descripcion" label="Descripción del problema" type="textarea" [required]="true" hint="Mínimo 10 caracteres. No incluyas contraseñas ni información confidencial." [error]="errors().description" [value]="draft().description" (valueChange)="patch({ description: $event })" />
+  <ui-dropzone id="adjuntos" label="Adjuntar captura o documentos (opcional)" [files]="files()" (filesChange)="files.set($event)" />
   <div class="flex flex-wrap gap-3">
-    <ui-button type="submit">Registrar ticket</ui-button>
+    <ui-button type="submit" [disabled]="submitting()">{{ submitting() ? 'Registrando…' : 'Registrar ticket' }}</ui-button>
     <ui-button variant="secondary" type="button" (click)="resetForm()">Limpiar formulario</ui-button>
   </div>
 </form>

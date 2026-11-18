@@ -1,4 +1,4 @@
 <label class="check" [for]="id()">
-  <input [id]="id()" type="checkbox" [checked]="checked()" (change)="onChange($event)" />
+  <input [id]="id()" type="checkbox" [checked]="checked()" [disabled]="disabled()" (change)="onChange($event)" />
   <span>{{ label() }}</span>
 </label>

@@ -22,12 +22,12 @@ export const seedCategories: readonly TicketCategory[] = [
 ];
 
 export const seedTeam: readonly TeamMember[] = [
-  { id: 'm0', fullName: 'Luis Castillo', document: '70123456', roleTitle: 'Responsable de TI', email: 'luis.castillo@uprit.edu.pe', phone: '949123456', functions: 'Supervisión general de TI - Sistemas y plataformas - Gestión de incidentes críticos', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', isManager: true },
-  { id: 'm1', fullName: 'María Salazar', document: '71234561', roleTitle: 'Asistente de soporte TI', email: 'maria.salazar@uprit.edu.pe', phone: '987654321', functions: 'Correo institucional - Acceso y contraseñas', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', isManager: false },
-  { id: 'm2', fullName: 'Sergio Torres', document: '72345612', roleTitle: 'Asistente de soporte TI', email: 'sergio.torres@uprit.edu.pe', phone: '976543210', functions: 'Correo institucional - Software', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', isManager: false },
-  { id: 'm3', fullName: 'Diego Flores', document: '73456123', roleTitle: 'Especialista de infraestructura', email: 'diego.flores@uprit.edu.pe', phone: '965432109', functions: 'Red e internet - Mantenimiento de equipos', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', isManager: false },
-  { id: 'm4', fullName: 'Carla Rojas', document: '74561234', roleTitle: 'Técnica de soporte', email: 'carla.rojas@uprit.edu.pe', phone: '954321098', functions: 'Equipos y periféricos - Mantenimiento de equipos', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', isManager: false },
-  { id: 'm5', fullName: 'Jorge Paredes', document: '75612345', roleTitle: 'Analista de sistemas', email: 'jorge.paredes@uprit.edu.pe', phone: '943210987', functions: 'Sistemas y plataformas - Software', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', isManager: false },
+  { id: 'm0', fullName: 'Luis Castillo', document: '70123456', roleTitle: 'Responsable de TI', email: 'luis.castillo@uprit.edu.pe', phone: '949123456', functions: 'Supervisión general de TI - Sistemas y plataformas - Gestión de incidentes críticos', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', areaIds: [], isManager: true },
+  { id: 'm1', fullName: 'María Salazar', document: '71234561', roleTitle: 'Asistente de soporte TI', email: 'maria.salazar@uprit.edu.pe', phone: '987654321', functions: 'Correo institucional - Acceso y contraseñas', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', areaIds: [], isManager: false },
+  { id: 'm2', fullName: 'Sergio Torres', document: '72345612', roleTitle: 'Asistente de soporte TI', email: 'sergio.torres@uprit.edu.pe', phone: '976543210', functions: 'Correo institucional - Software', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', areaIds: [], isManager: false },
+  { id: 'm3', fullName: 'Diego Flores', document: '73456123', roleTitle: 'Especialista de infraestructura', email: 'diego.flores@uprit.edu.pe', phone: '965432109', functions: 'Red e internet - Mantenimiento de equipos', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', areaIds: [], isManager: false },
+  { id: 'm4', fullName: 'Carla Rojas', document: '74561234', roleTitle: 'Técnica de soporte', email: 'carla.rojas@uprit.edu.pe', phone: '954321098', functions: 'Equipos y periféricos - Mantenimiento de equipos', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', areaIds: [], isManager: false },
+  { id: 'm5', fullName: 'Jorge Paredes', document: '75612345', roleTitle: 'Analista de sistemas', email: 'jorge.paredes@uprit.edu.pe', phone: '943210987', functions: 'Sistemas y plataformas - Software', schedule: 'Lunes a viernes: 8:45 a. m. a 5:00 p. m.', areaIds: [], isManager: false },
 ];
 
 export const seedPriorities: readonly PriorityLevel[] = [

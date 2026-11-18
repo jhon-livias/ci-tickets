@@ -8,9 +8,11 @@ import { Component, input, model } from '@angular/core';
 export class UiCheckboxComponent {
   readonly id = input.required<string>();
   readonly label = input.required<string>();
+  readonly disabled = input(false);
   readonly checked = model(false);
 
   protected onChange(event: Event): void {
+    if (this.disabled()) return;
     this.checked.set((event.target as HTMLInputElement).checked);
   }
 }

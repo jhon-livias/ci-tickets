@@ -105,21 +105,31 @@ export class CategoriesPage {
       return;
     }
     const current = this.selected();
-    await this.catalog.saveCategory({
-      id: current?.id || crypto.randomUUID(),
-      areaId: this.categoryArea(),
-      name: this.name().trim(),
-      description: this.description().trim(),
-      enabled: this.enabled(),
-    });
-    this.selected.set(null);
+    try {
+      await this.catalog.saveCategory({
+        id: current?.id || crypto.randomUUID(),
+        areaId: this.categoryArea(),
+        name: this.name().trim(),
+        description: this.description().trim(),
+        enabled: this.enabled(),
+      });
+      this.selected.set(null);
+      this.notice.set(null);
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos guardar la categoría.');
+    }
   }
 
   async remove(): Promise<void> {
     const category = this.removing();
-    if (category) await this.catalog.removeCategory(category.id);
-    this.removing.set(null);
-    this.selected.set(null);
+    try {
+      if (category) await this.catalog.removeCategory(category.id);
+      this.removing.set(null);
+      this.selected.set(null);
+    } catch (error) {
+      this.removing.set(null);
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos eliminar la categoría.');
+    }
   }
 
   private fill(category: TicketCategory): void {

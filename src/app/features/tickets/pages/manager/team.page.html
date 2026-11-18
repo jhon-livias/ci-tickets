@@ -1,22 +1,40 @@
 <ui-page-header [items]="crumbs" title="Equipo de TI" description="Administra integrantes, horarios y funciones del equipo.">
   <ui-button (click)="openCreate()">Crear colaborador</ui-button>
 </ui-page-header>
+@if (accountNotice()) {
+  <div class="mt-4"><ui-alert tone="success">{{ accountNotice() }}</ui-alert></div>
+}
+@if (notice() && !selected()) {
+  <div class="mt-4"><ui-alert tone="warning">{{ notice() }}</ui-alert></div>
+}
 <ui-filter-bar>
   <ui-field id="team-name" label="Apellidos y nombres" [(value)]="nameQuery" />
   <ui-field id="team-dni" label="DNI" [(value)]="documentQuery" />
 </ui-filter-bar>
 <div class="mt-6">
-  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" (view)="open($event, false)" />
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="false" [allowRemove]="false" emptyMessage="No hay colaboradores registrados." (view)="open($event, false)" />
 </div>
 @if (selected(); as member) {
   <ui-dialog [title]="dialogTitle(member)" (closed)="selected.set(null)">
     @if (notice()) { <ui-alert tone="warning">{{ notice() }}</ui-alert> }
     <div class="mt-4 grid gap-4">
-      <ui-field id="member-name" label="Nombres y apellidos" [disabled]="!creating() || member.isManager" [(value)]="fullName" />
-      <ui-field id="member-dni" label="DNI" [disabled]="!creating() || member.isManager" [(value)]="document" />
-      <ui-field id="member-role" label="Cargo" [disabled]="!creating() || member.isManager" [(value)]="roleTitle" />
-      <ui-field id="member-email" label="Correo" [disabled]="!creating() || member.isManager" [(value)]="email" />
-      <ui-field id="member-phone" label="Teléfono" [disabled]="!creating() || member.isManager" [(value)]="phone" />
+      <ui-field id="member-name" label="Nombres y apellidos" [required]="!member.isManager" [disabled]="!creating() || member.isManager" [error]="errors().fullName" [(value)]="fullName" />
+      <ui-field id="member-dni" label="DNI" [required]="!member.isManager" placeholder="8 dígitos" hint="Es también la contraseña inicial." [disabled]="!creating() || member.isManager" [error]="errors().document" [(value)]="document" />
+      <ui-field id="member-role" label="Cargo" [required]="!member.isManager" [disabled]="!creating() || member.isManager" [error]="errors().roleTitle" [(value)]="roleTitle" />
+      <ui-field id="member-email" label="Correo institucional" type="email" [required]="!member.isManager" placeholder="nombre@uprit.edu.pe" hint="Será el usuario de acceso." [disabled]="!creating() || member.isManager" [error]="errors().email" [(value)]="email" />
+      <ui-field id="member-phone" label="Teléfono" hint="Opcional." [disabled]="!creating() || member.isManager" [(value)]="phone" />
+      @if (!member.isManager) {
+      <fieldset class="grid gap-2">
+        <legend class="text-sm font-semibold">Áreas *</legend>
+        <p class="text-sm text-[#5e5254]">Elige una o más. Puede estar inscrito en más de dos áreas.</p>
+        @for (area of areas(); track area.id) {
+          <ui-checkbox [id]="'member-area-' + area.id" [label]="area.code + ' · ' + area.name" [checked]="areaIds().includes(area.id)" [disabled]="!creating() && !editing()" (checkedChange)="toggleArea(area.id, $event)" />
+        } @empty {
+          <p class="text-sm" role="status">No hay áreas activas para inscribir.</p>
+        }
+        @if (errors().areaIds) { <p class="text-sm font-semibold text-[#9a3412]" role="alert">{{ errors().areaIds }}</p> }
+      </fieldset>
+      }
       <ui-field id="member-functions" label="Funciones" type="textarea" [disabled]="!creating() && !editing()" [(value)]="functions" hint="Separa cada función con un guion medio (-)." />
       <ui-field id="member-schedule" label="Horario de trabajo" type="textarea" [disabled]="!creating() && !editing()" [(value)]="schedule" hint="Separa cada horario con un guion medio (-)." />
     </div>

@@ -8,15 +8,15 @@
   <ui-button variant="secondary" (click)="clearFilters()">Limpiar filtros</ui-button>
 </ui-filter-bar>
 <div class="mt-6">
-  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" (view)="open($event)" (edit)="open($event)" (remove)="removing.set(categoryFrom($event))" />
+  <ui-table [columns]="columns" [rows]="rows()" [actions]="true" [allowView]="true" [allowEdit]="true" [allowRemove]="true" emptyMessage="No hay categorías registradas." (view)="open($event)" (edit)="open($event)" (remove)="removing.set(categoryFrom($event))" />
 </div>
 @if (selected(); as category) {
   <ui-dialog [title]="category.id ? 'Detalle de categoría' : 'Crear categoría'" (closed)="selected.set(null)">
     @if (notice()) { <ui-alert tone="warning">{{ notice() }}</ui-alert> }
     <div class="mt-4 grid gap-4">
-      <ui-select id="cat-area" label="Área" [options]="areaChoices().filter((item) => item.value)" [(value)]="categoryArea" />
-      <ui-field id="cat-name" label="Nombre" [(value)]="name" />
-      <ui-field id="cat-description" label="Descripción" type="textarea" [(value)]="description" />
+      <ui-select id="cat-area" label="Área" [required]="true" [options]="areaChoices().filter((item) => item.value)" [(value)]="categoryArea" />
+      <ui-field id="cat-name" label="Nombre" [required]="true" hint="No se puede repetir dentro de la misma área." [(value)]="name" />
+      <ui-field id="cat-description" label="Descripción" type="textarea" hint="Opcional." [(value)]="description" />
       <ui-checkbox id="cat-enabled" label="Categoría activa" [(checked)]="enabled" />
     </div>
     <div dialog-footer class="flex gap-3">

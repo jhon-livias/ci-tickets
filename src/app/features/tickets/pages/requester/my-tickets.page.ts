@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { TicketDetailComponent } from '../../components/ticket-detail/ticket-detail.component';
 import { rowId, toTicketRow } from '../../data-access/ticket-table.adapter';
 import { emptyQuery, filterTickets, statusOptions } from '../../data-access/ticket-query';
+import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { TicketsCatalogService } from '../../data-access/tickets-catalog.service';
 import { isoDate, monthStart } from '../../models/ticket-labels';
 import type { Ticket } from '../../models/ticket.model';
@@ -29,6 +30,7 @@ import { UiTableComponent, type UiTableColumn, type UiTableRow } from '../../../
   templateUrl: './my-tickets.page.html',
 })
 export class MyTicketsPage {
+  private readonly auth = inject(TicketsAuthService);
   private readonly catalog = inject(TicketsCatalogService);
   private readonly viewState = inject(TicketsViewState);
   private readonly router = inject(Router);
@@ -48,7 +50,10 @@ export class MyTicketsPage {
   readonly statusChoices = statusOptions(['CREATED', 'IN_REVIEW', 'DERIVED', 'RETURNED', 'RESOLVED', 'REOPENED']);
   readonly crumbs = [{ label: 'Atención UPRIT' }, { label: 'Mis tickets' }];
   readonly rows = computed(() =>
-    filterTickets(this.catalog.tickets(), {
+    filterTickets(this.catalog.tickets().filter((ticket) => {
+      const mine = this.auth.user()?.id;
+      return !ticket.requesterUserId || !mine || ticket.requesterUserId === mine;
+    }), {
       ...emptyQuery(),
       from: this.from(),
       to: this.to(),

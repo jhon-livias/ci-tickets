@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { TicketsAuthService } from '../../../core/auth/tickets-auth.service';
+import { resolveTicketsRole } from '../../../core/auth/tickets-role';
 import type {
   CreateExternalTicketInput,
   CreateInternalTicketInput,
@@ -15,6 +16,27 @@ import type {
 } from '../models/ticket.model';
 
 const ticketsBaseUrl = '/api/v1/tickets';
+
+export interface AreaMembershipView {
+  readonly areaId: string;
+  readonly code: string;
+  readonly name: string;
+  readonly enabled: boolean;
+  readonly canCreateTickets: boolean;
+  readonly receivesTickets: boolean;
+}
+
+export interface TicketsAccess {
+  readonly enrolled: boolean;
+  readonly canCreateTickets: boolean;
+  readonly receivesTickets: boolean;
+  readonly memberships: readonly AreaMembershipView[];
+}
+
+interface AccountResult {
+  readonly accountCreated: boolean;
+  readonly username: string;
+}
 
 interface CatalogSnapshot {
   readonly areas: readonly ServiceArea[];
@@ -35,6 +57,8 @@ export class TicketsCatalogService {
   private readonly profileDocument = signal('');
   private readonly profileEmail = signal('');
   private readonly profileCountry = signal('+51');
+  private readonly accessState = signal<TicketsAccess>({ enrolled: false, canCreateTickets: false, receivesTickets: false, memberships: [] });
+  private accessLoaded = false;
 
   readonly tickets = this.ticketsState.asReadonly();
   readonly areas = this.areasState.asReadonly();
@@ -46,9 +70,18 @@ export class TicketsCatalogService {
   readonly contactEmail = this.profileEmail.asReadonly();
   readonly contactCountry = this.profileCountry.asReadonly();
   readonly receivingAreas = computed(() => this.areasState().filter((area) => area.enabled && area.receivesTickets));
-  readonly canCreateTickets = computed(() => this.areasState().some((area) => area.enabled && area.canCreateTickets));
-  readonly tiArea = computed(() => this.areasState().find((area) => area.enabled && area.code === 'TI') ?? null);
-  readonly receivesTickets = computed(() => this.tiArea()?.receivesTickets === true);
+  readonly access = this.accessState.asReadonly();
+  readonly myAreas = computed(() => this.accessState().memberships.filter((area) => area.enabled));
+  readonly canSeeMine = computed(() => this.accessState().enrolled ? this.accessState().canCreateTickets : this.role() === 'requester');
+  readonly canSeeCreate = computed(() => this.accessState().enrolled
+    ? this.accessState().canCreateTickets
+    : this.role() === 'requester' && this.areasState().some((area) => area.enabled && area.canCreateTickets));
+  readonly canSeeQueue = computed(() => {
+    if (this.accessState().enrolled) return this.accessState().receivesTickets;
+    const role = this.role();
+    return (role === 'assistant' || role === 'area_manager')
+      && this.areasState().some((area) => area.enabled && area.code === 'TI' && area.receivesTickets);
+  });
 
   ticketById(id: string): Ticket | null {
     return this.ticketsState().find((ticket) => ticket.id === id) ?? null;
@@ -82,10 +115,16 @@ export class TicketsCatalogService {
     this.profilePhone.set(mobile);
   }
 
+  async ensureAccess(): Promise<void> {
+    if (this.accessLoaded) return;
+    await this.loadAccess();
+  }
+
   async refresh(): Promise<void> {
     const [catalog, tickets] = await Promise.all([
       this.request<CatalogSnapshot>('GET', '/catalog'),
       this.request<readonly Ticket[]>('GET', ''),
+      this.loadAccess(),
     ]);
     this.areasState.set(catalog.areas);
     this.categoriesState.set(catalog.categories);
@@ -103,6 +142,7 @@ export class TicketsCatalogService {
       categoryId: input.categoryId,
       description: input.description,
       attachmentNames: input.attachmentNames,
+      ...(input.originAreaId ? { originAreaId: input.originAreaId } : {}),
     });
     await this.refresh();
     return this.ticketById(ticket.id) ?? ticket;
@@ -148,7 +188,7 @@ export class TicketsCatalogService {
     await this.refresh();
   }
 
-  async saveArea(area: ServiceArea): Promise<void> {
+  async saveArea(area: ServiceArea): Promise<AccountResult> {
     const known = this.areasState().some((item) => item.id === area.id);
     const body = {
       parentId: area.parentId,
@@ -163,9 +203,11 @@ export class TicketsCatalogService {
       canCreateTickets: area.canCreateTickets,
       enabled: area.enabled,
     };
-    if (known) await this.request<void>('PUT', `/areas/${area.id}`, body);
-    else await this.request<void>('POST', '/areas', body);
+    const result = known
+      ? await this.request<AccountResult>('PUT', `/areas/${area.id}`, body)
+      : await this.request<AccountResult>('POST', '/areas', body);
     await this.refresh();
+    return result;
   }
 
   async removeArea(id: string): Promise<void> {
@@ -186,7 +228,7 @@ export class TicketsCatalogService {
     await this.refresh();
   }
 
-  async saveMember(member: TeamMember): Promise<void> {
+  async saveMember(member: TeamMember): Promise<AccountResult> {
     const known = this.teamState().some((item) => item.id === member.id);
     const body = {
       fullName: member.fullName,
@@ -196,10 +238,13 @@ export class TicketsCatalogService {
       phone: member.phone,
       functions: member.functions,
       schedule: member.schedule,
+      areaIds: member.areaIds,
     };
-    if (known) await this.request<void>('PUT', `/team/${member.id}`, body);
-    else await this.request<void>('POST', '/team', body);
+    const result = known
+      ? await this.request<AccountResult>('PUT', `/team/${member.id}`, body)
+      : await this.request<AccountResult>('POST', '/team', body);
     await this.refresh();
+    return result;
   }
 
   async removeMember(id: string): Promise<void> {
@@ -228,6 +273,16 @@ export class TicketsCatalogService {
       .sort()[0] ?? new Date().toISOString().slice(0, 10);
   }
 
+  private role() {
+    return resolveTicketsRole(this.auth.user());
+  }
+
+  private async loadAccess(): Promise<void> {
+    const access = await this.request<TicketsAccess>('GET', '/access');
+    this.accessState.set(access);
+    this.accessLoaded = true;
+  }
+
   private async request<T>(method: string, path: string, body?: unknown, base = ticketsBaseUrl): Promise<T> {
     const response = await fetch(`${base}${path}`, {
       method,
@@ -247,12 +302,19 @@ export class TicketsCatalogService {
 
 const apiError = async (response: Response): Promise<string> => {
   try {
-    const payload: unknown = await response.json();
-    if (payload && typeof payload === 'object' && typeof (payload as { message?: unknown }).message === 'string') {
-      return (payload as { message: string }).message;
-    }
+    return readableMessage(await response.json());
   } catch {
-    /* cuerpo no JSON */
+    return 'No pudimos completar la operación. Inténtalo nuevamente.';
   }
-  return 'No pudimos completar la operación. Inténtalo nuevamente.';
+};
+
+const readableMessage = (payload: unknown): string => {
+  const raw = payload && typeof payload === 'object' ? (payload as { message?: unknown }).message : payload;
+  const text = Array.isArray(raw)
+    ? raw.filter((item): item is string => typeof item === 'string').join(' ')
+    : typeof raw === 'string' ? raw : '';
+  if (!text.trim() || /p20\d{2}|postgres|prisma|sqlstate/i.test(text)) {
+    return 'No pudimos completar la operación. Inténtalo nuevamente.';
+  }
+  return text;
 };

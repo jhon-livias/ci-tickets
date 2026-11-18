@@ -27,6 +27,7 @@ export interface Ticket {
   readonly status: TicketStatus;
   readonly estimate: string;
   readonly priority: TicketPriority;
+  readonly requesterUserId?: string;
   readonly requesterName: string;
   readonly requesterRole: string;
   readonly assignedName: string | null;
@@ -73,6 +74,7 @@ export interface TeamMember {
   readonly functions: string;
   readonly schedule: string;
   readonly isManager: boolean;
+  readonly areaIds: readonly string[];
 }
 
 export interface PriorityActivity {
@@ -90,6 +92,7 @@ export interface PriorityLevel {
 
 export interface CreateExternalTicketInput {
   readonly areaId: string;
+  readonly originAreaId?: string;
   readonly about: 'self' | 'student' | 'teacher';
   readonly otherName: string;
   readonly otherDocument: string;

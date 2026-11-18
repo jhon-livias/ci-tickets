@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
+import { PasswordChangeComponent } from '../../features/auth/components/password-change.component';
 import { TicketsAuthService } from '../../core/auth/tickets-auth.service';
 import { homePathFor, resolveTicketsRole } from '../../core/auth/tickets-role';
 import { TicketsCatalogService } from '../../features/tickets/data-access/tickets-catalog.service';
@@ -19,7 +20,7 @@ interface NavItem {
 
 @Component({
   selector: 'app-tickets-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, UiSelectComponent, UiDialogComponent, UiFieldComponent, UiButtonComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, UiSelectComponent, UiDialogComponent, UiFieldComponent, UiButtonComponent, PasswordChangeComponent],
   templateUrl: './app-layout.component.html',
 })
 export class AppLayoutComponent {
@@ -46,13 +47,23 @@ export class AppLayoutComponent {
     area_manager: 'Jefatura de TI',
     admin: 'Administrador del sistema',
   }[this.role()]));
-  readonly navItems = computed(() => navFor(this.role(), this.catalog.canCreateTickets(), this.catalog.receivesTickets()));
-  readonly showAreaFilter = computed(() => this.role() === 'requester');
-  readonly areaOptions = computed((): readonly UiSelectOption[] => [
-    { value: '', label: 'Todas las áreas' },
-    { value: 'DERECHO', label: 'Derecho' },
-    { value: 'EDUCACION INICIAL', label: 'Educación Inicial' },
-  ]);
+  readonly mustChangePassword = computed(() => this.auth.user()?.mustChangePassword === true);
+  readonly navItems = computed(() => navFor(this.role(), this.catalog.canSeeMine(), this.catalog.canSeeCreate(), this.catalog.canSeeQueue()));
+  readonly showAreaFilter = computed(() => this.role() === 'requester' || this.catalog.myAreas().length > 0);
+  readonly areaOptions = computed((): readonly UiSelectOption[] => {
+    const mine = this.catalog.myAreas();
+    if (mine.length) {
+      return [
+        { value: '', label: 'Todas las áreas' },
+        ...mine.map((area) => ({ value: area.name, label: area.name })),
+      ];
+    }
+    return [
+      { value: '', label: 'Todas las áreas' },
+      { value: 'DERECHO', label: 'Derecho' },
+      { value: 'EDUCACION INICIAL', label: 'Educación Inicial' },
+    ];
+  });
 
   constructor() {
     void this.bootstrap();
@@ -62,6 +73,13 @@ export class AppLayoutComponent {
     await this.catalog.refresh();
     await this.catalog.loadProfile();
     this.phone.set(this.catalog.contactPhone());
+    const mine = this.catalog.myAreas();
+    if (mine.length === 1) this.academicArea.set(mine[0]?.name ?? '');
+  }
+
+  async passwordChanged(): Promise<void> {
+    await this.auth.logout();
+    await this.router.navigate(['/login'], { queryParams: { password: 'changed' } });
   }
 
   toggleMenu(): void { this.menuOpen.update((value) => !value); }
@@ -105,33 +123,41 @@ export { homePathFor };
 
 const navFor = (
   role: TicketsRole,
-  canCreateTickets: boolean,
-  receivesTickets: boolean,
+  canSeeMine: boolean,
+  canSeeCreate: boolean,
+  canSeeQueue: boolean,
 ): readonly NavItem[] => {
+  const requesterItems = [
+    ...(canSeeMine ? [{ label: 'Mis tickets', path: '/mis-tickets' }] : []),
+    ...(canSeeCreate ? [{ label: 'Crear ticket', path: '/crear' }] : []),
+  ];
   if (role === 'requester') {
     return [
-      { label: 'Mis tickets', path: '/mis-tickets' },
-      ...(canCreateTickets ? [{ label: 'Crear ticket', path: '/crear' }] : []),
+      ...requesterItems,
+      ...(canSeeQueue ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
+      ...(canSeeQueue ? [{ label: 'Tickets resueltos', path: '/cerrados' }] : []),
     ];
   }
   if (role === 'assistant') {
     return [
       { label: 'Inicio', path: '/inicio' },
-      ...(receivesTickets ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
-      ...(receivesTickets ? [{ label: 'Tickets cerrados', path: '/cerrados' }] : []),
+      ...requesterItems,
+      ...(canSeeQueue ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
+      ...(canSeeQueue ? [{ label: 'Tickets resueltos', path: '/cerrados' }] : []),
     ];
   }
   if (role === 'area_manager') {
     const ticketChildren = [
-      ...(receivesTickets ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
-      ...(receivesTickets ? [{ label: 'Tickets cerrados', path: '/historial' }] : []),
+      ...(canSeeQueue ? [{ label: 'Cola de tickets', path: '/cola' }] : []),
+      ...(canSeeQueue ? [{ label: 'Tickets resueltos', path: '/historial' }] : []),
     ];
     return [
       { label: 'Inicio', path: '/inicio' },
+      ...requesterItems,
       ...(ticketChildren.length
         ? [{ label: 'Tickets', path: ticketChildren[0].path, children: ticketChildren }]
         : []),
-      { label: 'Equipo de TI', path: '/equipo' },
+      { label: 'Equipo', path: '/equipo' },
       { label: 'Prioridades', path: '/prioridades' },
     ];
   }

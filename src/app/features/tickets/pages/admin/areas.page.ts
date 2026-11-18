@@ -39,6 +39,19 @@ export class AreasPage {
   readonly removing = signal<ServiceArea | null>(null);
   readonly resetting = signal<ServiceArea | null>(null);
   readonly notice = signal<string | null>(null);
+  readonly accountNotice = signal<string | null>(null);
+  readonly submitted = signal(false);
+  readonly errors = computed(() => {
+    if (!this.submitted()) return {} as Record<string, string>;
+    const code = this.code().trim().toUpperCase();
+    return {
+      code: /^[A-Z]{2,6}$/.test(code) ? '' : 'Usa siglas de 2 a 6 letras, sin números.',
+      name: this.name().trim().length >= 3 ? '' : 'Escribe el nombre del área.',
+      managerName: this.managerName().trim().length >= 3 ? '' : 'Escribe el nombre del responsable.',
+      managerDocument: /^\d{8}$/.test(this.managerDocument().trim()) ? '' : 'El DNI debe tener 8 dígitos.',
+      managerEmail: /@uprit\.edu\.pe$/iu.test(this.managerEmail().trim()) ? '' : 'Usa un correo institucional @uprit.edu.pe.',
+    };
+  });
   readonly code = signal('');
   readonly name = signal('');
   readonly parentId = signal('');
@@ -104,12 +117,14 @@ export class AreasPage {
   }
 
   async save(): Promise<void> {
-    if (!/^[A-Z]{2,6}$/.test(this.code().trim()) || this.name().trim().length < 3) {
-      this.notice.set('Usa siglas de 2 a 6 letras y un nombre de área.');
+    this.submitted.set(true);
+    if (Object.values(this.errors()).some(Boolean)) {
+      this.notice.set('Revisa los datos marcados para continuar.');
       return;
     }
     const current = this.selected();
-    await this.catalog.saveArea({
+    try {
+    const result = await this.catalog.saveArea({
       id: current?.id || crypto.randomUUID(),
       parentId: this.parentId() || null,
       code: this.code().trim().toUpperCase(),
@@ -123,14 +138,25 @@ export class AreasPage {
       canCreateTickets: this.canCreateTickets(),
       enabled: this.enabled(),
     });
+    this.accountNotice.set(result.accountCreated
+      ? `Se creó la cuenta ${result.username}. La contraseña inicial es su DNI. En el primer ingreso debe cambiarla y activar el doble factor.`
+      : `La cuenta ${result.username} ya existía y quedó inscrita como responsable del área.`);
     this.selected.set(null);
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos guardar el área.');
+    }
   }
 
   async remove(): Promise<void> {
     const area = this.removing();
-    if (area) await this.catalog.removeArea(area.id);
-    this.removing.set(null);
-    this.selected.set(null);
+    try {
+      if (area) await this.catalog.removeArea(area.id);
+      this.removing.set(null);
+      this.selected.set(null);
+    } catch (error) {
+      this.removing.set(null);
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos eliminar el área.');
+    }
   }
 
   catalogArea(row: UiTableRow): ServiceArea | null {
@@ -157,5 +183,6 @@ export class AreasPage {
     this.allowsInternal.set(area.allowsInternal);
     this.canCreateTickets.set(area.canCreateTickets);
     this.notice.set(null);
+    this.submitted.set(false);
   }
 }

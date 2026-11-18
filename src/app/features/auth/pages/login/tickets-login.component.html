@@ -1,7 +1,10 @@
 <app-auth-layout>
   <section aria-labelledby="login-title">
     <h1 id="login-title" class="sr-only">Iniciar sesión</h1>
-    @if (enrollment(); as enroll) {
+    @if (changingPassword()) {
+      <h2 class="mb-4 text-lg font-semibold">Cambia tu contraseña</h2>
+      <app-password-change (completed)="passwordChanged()" />
+    } @else if (enrollment(); as enroll) {
       <form class="space-y-4" (submit)="confirmEnrollment($event)">
         <p class="text-sm text-[#1e1e1e]">Antes de entrar, activa la autenticación en Google Authenticator o Microsoft Authenticator.</p>
         <img class="mx-auto size-52" [src]="enroll.qr" alt="Código para activar la autenticación de dos pasos" />
@@ -25,7 +28,7 @@
       <ui-button class="mt-2" [disabled]="submitting()" [fullWidth]="true" [pill]="true" type="submit">{{ submitting() ? 'Ingresando…' : 'Iniciar sesión' }}</ui-button>
     </form>
     }
-    @if (!enrollment()) {
+    @if (!enrollment() && !changingPassword()) {
     <p class="mt-5 text-center text-xs text-[#7c8691]">Este sitio está protegido por reCAPTCHA de Google.</p>
     <div class="my-5 flex items-center gap-4 text-sm text-[#7c8691]" aria-hidden="true"><span class="h-px flex-1 bg-[#dfd6d6]"></span><span>o</span><span class="h-px flex-1 bg-[#dfd6d6]"></span></div>
     <ui-button [fullWidth]="true" [pill]="true" variant="soft" type="button" (click)="continueWithGoogle()">Continuar con Google</ui-button>

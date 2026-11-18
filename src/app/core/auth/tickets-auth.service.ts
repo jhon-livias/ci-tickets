@@ -5,6 +5,7 @@ export interface TicketsUser {
   readonly username: string;
   readonly displayName: string | null;
   readonly roles: readonly string[];
+  readonly mustChangePassword?: boolean;
 }
 
 // Tickets expone el Gateway bajo su mismo dominio; así la sesión queda aislada
@@ -31,6 +32,18 @@ export class TicketsAuthService {
     this.csrfToken = session.csrfToken;
     this.user.set(session.user);
     return null;
+  }
+
+  async changePassword(password: string): Promise<void> {
+    const response = await fetch(`${authBaseUrl}/password`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...this.csrfHeaders() },
+      body: JSON.stringify({ password }),
+    });
+    if (!response.ok) throw new Error(await loginErrorMessage(response));
+    const current = this.user();
+    if (current) this.user.set({ ...current, mustChangePassword: false });
   }
 
   async beginEnrollment(enrollmentToken: string): Promise<{ secret: string; qrSvg: string }> {
@@ -128,7 +141,16 @@ const toSession = (value: unknown): { readonly csrfToken: string; readonly user:
     ...stringList(candidate['roles']),
     ...stringList(candidate['applicationRoles']),
   ]);
-  return { csrfToken, user: { id: candidate['id'], username: candidate['username'], displayName, roles } };
+  return {
+    csrfToken,
+    user: {
+      id: candidate['id'],
+      username: candidate['username'],
+      displayName,
+      roles,
+      mustChangePassword: candidate['mustChangePassword'] === true,
+    },
+  };
 };
 
 const stringList = (value: unknown): readonly string[] =>

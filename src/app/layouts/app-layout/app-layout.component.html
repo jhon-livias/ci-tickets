@@ -1,3 +1,11 @@
+@if (mustChangePassword()) {
+  <div class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+    <section class="w-full max-w-md rounded-2xl bg-white p-6" aria-labelledby="password-title">
+      <h2 id="password-title" class="mb-4 text-lg font-semibold">Cambia tu contraseña</h2>
+      <app-password-change (completed)="passwordChanged()" />
+    </section>
+  </div>
+}
 <main class="min-h-dvh bg-[#fcf9fa]" (click)="closePanels()">
   <section class="relative min-h-dvh overflow-hidden bg-[#fcf9fa]">
     <header class="relative z-30 flex h-18 items-center justify-between px-5 sm:h-20 sm:px-8">

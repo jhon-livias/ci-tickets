@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 
 import { TicketsCatalogService } from '../../data-access/tickets-catalog.service';
 import type { TeamMember } from '../../models/ticket.model';
+import { UiCheckboxComponent } from '../../../../shared/ui/checkbox/ui-checkbox.component';
 import { UiAlertComponent } from '../../../../shared/ui/alert/ui-alert.component';
 import { UiButtonComponent } from '../../../../shared/ui/button/ui-button.component';
 import { UiConfirmComponent } from '../../../../shared/ui/confirm/ui-confirm.component';
@@ -13,7 +14,7 @@ import { UiTableComponent, type UiTableColumn, type UiTableRow } from '../../../
 
 @Component({
   selector: 'app-team-page',
-  imports: [UiPageHeaderComponent, UiButtonComponent, UiFilterBarComponent, UiFieldComponent, UiTableComponent, UiDialogComponent, UiConfirmComponent, UiAlertComponent],
+  imports: [UiPageHeaderComponent, UiButtonComponent, UiFilterBarComponent, UiFieldComponent, UiTableComponent, UiDialogComponent, UiConfirmComponent, UiAlertComponent, UiCheckboxComponent],
   templateUrl: './team.page.html',
 })
 export class TeamPage {
@@ -30,7 +31,21 @@ export class TeamPage {
   readonly phone = signal('');
   readonly functions = signal('');
   readonly schedule = signal('');
+  readonly areaIds = signal<readonly string[]>([]);
   readonly notice = signal<string | null>(null);
+  readonly accountNotice = signal<string | null>(null);
+  readonly submitted = signal(false);
+  readonly errors = computed(() => {
+    if (!this.submitted() || this.selected()?.isManager) return {} as Record<string, string>;
+    return {
+      fullName: this.fullName().trim().length >= 3 ? '' : 'Escribe nombres y apellidos.',
+      document: /^\d{8}$/.test(this.document().trim()) ? '' : 'El DNI debe tener 8 dígitos.',
+      roleTitle: this.roleTitle().trim().length >= 3 ? '' : 'Escribe el cargo.',
+      email: /@uprit\.edu\.pe$/iu.test(this.email().trim()) ? '' : 'Usa un correo institucional @uprit.edu.pe.',
+      areaIds: this.areaIds().length > 0 ? '' : 'Selecciona al menos un área.',
+    };
+  });
+  readonly areas = computed(() => this.catalog.areas().filter((area) => area.enabled));
   readonly editing = signal(false);
   readonly creating = signal(false);
   readonly columns: readonly UiTableColumn[] = [
@@ -59,7 +74,7 @@ export class TeamPage {
   openCreate(): void {
     this.creating.set(true);
     this.editing.set(true);
-    this.selected.set({ id: '', fullName: '', document: '', roleTitle: '', email: '', phone: '', functions: '', schedule: '', isManager: false });
+    this.selected.set({ id: '', fullName: '', document: '', roleTitle: '', email: '', phone: '', functions: '', schedule: '', isManager: false, areaIds: [] });
     this.fill(this.selected());
   }
 
@@ -88,29 +103,45 @@ export class TeamPage {
   async save(): Promise<void> {
     const current = this.selected();
     if (!current) return;
-    if (this.fullName().trim().length < 3 || !/^\d{8}$/.test(this.document()) || this.roleTitle().trim().length < 3) {
-      this.notice.set('Completa nombres, DNI de 8 dígitos y cargo.');
+    this.submitted.set(true);
+    if (Object.values(this.errors()).some(Boolean)) {
+      this.notice.set('Revisa los datos marcados para continuar.');
       return;
     }
-    await this.catalog.saveMember({
-      id: current.id || crypto.randomUUID(),
-      fullName: this.fullName().trim(),
-      document: this.document().trim(),
-      roleTitle: current.isManager ? current.roleTitle : this.roleTitle().trim(),
-      email: this.email().trim(),
-      phone: this.phone().trim(),
-      functions: this.functions().trim(),
-      schedule: this.schedule().trim(),
-      isManager: current.isManager,
-    });
-    this.selected.set(null);
-    this.notice.set(null);
+    try {
+      const result = await this.catalog.saveMember({
+        id: current.id || crypto.randomUUID(),
+        fullName: this.fullName().trim(),
+        document: this.document().trim(),
+        roleTitle: current.isManager ? current.roleTitle : this.roleTitle().trim(),
+        email: this.email().trim(),
+        phone: this.phone().trim(),
+        functions: this.functions().trim(),
+        schedule: this.schedule().trim(),
+        isManager: current.isManager,
+        areaIds: this.areaIds(),
+      });
+      this.accountNotice.set(current.isManager ? null : accountMessage(result.accountCreated, result.username));
+      this.selected.set(null);
+      this.notice.set(null);
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos guardar al colaborador.');
+    }
+  }
+
+  toggleArea(areaId: string, checked: boolean): void {
+    this.areaIds.update((current) => checked ? [...new Set([...current, areaId])] : current.filter((id) => id !== areaId));
   }
 
   async remove(): Promise<void> {
     const member = this.removing();
-    if (member) await this.catalog.removeMember(member.id);
-    this.removing.set(null);
+    try {
+      if (member) await this.catalog.removeMember(member.id);
+      this.removing.set(null);
+    } catch (error) {
+      this.removing.set(null);
+      this.notice.set(error instanceof Error ? error.message : 'No pudimos eliminar al colaborador.');
+    }
   }
 
   private fill(member: TeamMember | null): void {
@@ -121,6 +152,12 @@ export class TeamPage {
     this.phone.set(member?.phone ?? '');
     this.functions.set(member?.functions ?? '');
     this.schedule.set(member?.schedule ?? '');
+    this.areaIds.set(member?.areaIds ?? []);
     this.notice.set(null);
+    this.submitted.set(false);
   }
 }
+
+const accountMessage = (created: boolean, username: string): string => created
+  ? `Se creó la cuenta ${username}. La contraseña inicial es su DNI. En el primer ingreso debe cambiarla y activar el doble factor.`
+  : `La cuenta ${username} ya existía y quedó inscrita en las áreas elegidas.`;

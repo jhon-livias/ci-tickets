@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { ticketsAuthGuard, ticketsHomeGuard, ticketsRoleGuard } from './core/auth/tickets-auth.guard';
+import { ticketsAccessGuard, ticketsAuthGuard, ticketsHomeGuard, ticketsRoleGuard } from './core/auth/tickets-auth.guard';
 import { colaListResolver } from './features/tickets/pages/staff/cola.resolver';
 import { TicketsLoginComponent } from './features/auth/pages/login/tickets-login.component';
 import { AreasPage } from './features/tickets/pages/admin/areas.page';
@@ -23,12 +23,12 @@ export const routes: Routes = [
     canActivate: [ticketsAuthGuard],
     children: [
       { path: '', pathMatch: 'full', component: StaffHomePage, canActivate: [ticketsHomeGuard] },
-      { path: 'mis-tickets', title: 'Mis tickets', component: MyTicketsPage, canActivate: [ticketsRoleGuard(['requester'])] },
-      { path: 'crear', title: 'Crear ticket', component: CreateTicketPage, canActivate: [ticketsRoleGuard(['requester'])] },
+      { path: 'mis-tickets', title: 'Mis tickets', component: MyTicketsPage, canActivate: [ticketsAccessGuard('mine')] },
+      { path: 'crear', title: 'Crear ticket', component: CreateTicketPage, canActivate: [ticketsAccessGuard('create')] },
       { path: 'inicio', title: 'Inicio', component: StaffHomePage, canActivate: [ticketsRoleGuard(['assistant', 'area_manager', 'admin'])] },
-      { path: 'cola', title: 'Cola de tickets', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant', 'area_manager'])], resolve: { list: colaListResolver } },
-      { path: 'cerrados', title: 'Tickets cerrados', component: TicketsListPage, canActivate: [ticketsRoleGuard(['assistant'])], data: { list: assistantClosed } },
-      { path: 'historial', title: 'Tickets cerrados', component: TicketsListPage, canActivate: [ticketsRoleGuard(['area_manager'])], data: { list: managerHistory } },
+      { path: 'cola', title: 'Cola de tickets', component: TicketsListPage, canActivate: [ticketsAccessGuard('queue')], resolve: { list: colaListResolver } },
+      { path: 'cerrados', title: 'Tickets resueltos', component: TicketsListPage, canActivate: [ticketsAccessGuard('queue')], data: { list: assistantClosed } },
+      { path: 'historial', title: 'Tickets resueltos', component: TicketsListPage, canActivate: [ticketsRoleGuard(['area_manager']), ticketsAccessGuard('queue')], data: { list: managerHistory } },
       { path: 'equipo', title: 'Equipo de TI', component: TeamPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'prioridades', title: 'Prioridades', component: PrioritiesPage, canActivate: [ticketsRoleGuard(['area_manager'])] },
       { path: 'areas', title: 'Áreas', component: AreasPage, canActivate: [ticketsRoleGuard(['admin'])] },

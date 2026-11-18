@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormField, FormRoot, form, minLength, required } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { PasswordChangeComponent } from '../../components/password-change.component';
 import { TicketsAuthService } from '../../../../core/auth/tickets-auth.service';
 import { homePathFor, resolveTicketsRole } from '../../../../core/auth/tickets-role';
 import { RecaptchaService } from '../../../../core/security/recaptcha.service';
@@ -13,7 +14,7 @@ import type { LoginCredentials } from '../../models/login-credentials.model';
 
 @Component({
   selector: 'app-tickets-login',
-  imports: [FormField, FormRoot, AuthLayoutComponent, UiAlertComponent, UiButtonComponent, UiFieldComponent],
+  imports: [FormField, FormRoot, AuthLayoutComponent, UiAlertComponent, UiButtonComponent, UiFieldComponent, PasswordChangeComponent],
   templateUrl: './tickets-login.component.html',
 })
 export class TicketsLoginComponent {
@@ -23,8 +24,9 @@ export class TicketsLoginComponent {
   private readonly route = inject(ActivatedRoute);
   readonly credentials = signal<LoginCredentials>({ username: '', password: '' });
   readonly totpCode = signal('');
-  readonly needsCode = signal(this.route.snapshot.queryParamMap.get('google') === 'totp');
+  readonly needsCode = signal(this.route.snapshot.queryParamMap.get('google') === 'totp' || this.route.snapshot.queryParamMap.get('password') === 'changed');
   readonly enrollment = signal<{ token: string; secret: string; qr: string } | null>(null);
+  readonly changingPassword = signal(false);
   readonly enrollCode = signal('');
   readonly loginForm = form(this.credentials, (path) => {
     required(path.username, { message: 'Ingresa tu usuario institucional.' });
@@ -37,7 +39,9 @@ export class TicketsLoginComponent {
       ? { text: 'Esta cuenta usa autenticación de dos pasos. Ingresa con tu contraseña y el código de la aplicación.', tone: 'warning' }
       : this.route.snapshot.queryParamMap.get('google') === 'enroll'
         ? { text: 'Debes activar la autenticación de dos pasos. Ingresa con tu usuario y contraseña.', tone: 'warning' }
-        : null,
+        : this.route.snapshot.queryParamMap.get('password') === 'changed'
+          ? { text: 'Contraseña actualizada. Ingresa de nuevo con la nueva contraseña y el código de autenticación.', tone: 'success' }
+          : null,
   );
 
   async submit(event: SubmitEvent): Promise<void> {
@@ -54,6 +58,10 @@ export class TicketsLoginComponent {
       if (enrollmentToken) {
         const setup = await this.auth.beginEnrollment(enrollmentToken);
         this.enrollment.set({ token: enrollmentToken, secret: setup.secret, qr: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(setup.qrSvg)}` });
+        return;
+      }
+      if (this.auth.user()?.mustChangePassword) {
+        this.changingPassword.set(true);
         return;
       }
       await this.router.navigateByUrl(homePathFor(resolveTicketsRole(this.auth.user())));
@@ -77,10 +85,22 @@ export class TicketsLoginComponent {
     this.notice.set(null);
     try {
       await this.auth.finishEnrollment(current.token, this.enrollCode().trim());
+      if (this.auth.user()?.mustChangePassword) {
+        this.enrollment.set(null);
+        this.changingPassword.set(true);
+        return;
+      }
       await this.router.navigateByUrl(homePathFor(resolveTicketsRole(this.auth.user())));
     } catch (error) {
       this.notice.set({ text: error instanceof Error ? error.message : 'No se pudo activar la autenticación.', tone: 'error' });
     } finally { this.submitting.set(false); }
+  }
+
+  async passwordChanged(): Promise<void> {
+    this.changingPassword.set(false);
+    this.needsCode.set(true);
+    await this.auth.logout();
+    this.notice.set({ text: 'Contraseña actualizada. Ingresa de nuevo con la nueva contraseña y el código de autenticación.', tone: 'success' });
   }
 
   continueWithGoogle(): void {
